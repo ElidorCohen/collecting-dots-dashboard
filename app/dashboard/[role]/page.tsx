@@ -1,6 +1,9 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { currentUser } from '@clerk/nextjs/server'
+import { SignOutButton, UserButton } from '@clerk/nextjs'
 import DemoDashboard from '../../components/demo-dashboard'
+import EmailValidationCheck from '../../components/email-validation'
 
 type Props = {
   params: { role: string }
@@ -38,11 +41,51 @@ async function getDashboardData(role: string, status: string = 'all') {
 }
 
 export default async function RoleDashboardPage({ params, searchParams }: Props) {
+  const user = await currentUser()
+  
+  if (!user) {
+    notFound()
+  }
+
   if (!['aviram', 'omri'].includes(params.role)) {
     notFound()
   }
 
   const initialData = await getDashboardData(params.role, searchParams.status)
 
-  return <DemoDashboard initialData={initialData} />
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with user info */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">
+                Demo Dashboard
+              </h1>
+              <p className="text-sm text-gray-600">
+                Welcome, {user.firstName || user.emailAddresses[0]?.emailAddress}
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <UserButton afterSignOutUrl="/" />
+              <SignOutButton>
+                <button className="text-sm text-gray-600 hover:text-gray-900">
+                  Sign Out
+                </button>
+              </SignOutButton>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      {/* Dashboard content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Email validation check */}
+        <EmailValidationCheck />
+        
+        <DemoDashboard initialData={initialData} />
+      </main>
+    </div>
+  )
 }
