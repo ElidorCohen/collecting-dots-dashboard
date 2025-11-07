@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import { currentUser } from '@clerk/nextjs/server'
 import { SignOutButton, UserButton } from '@clerk/nextjs'
 import DemoDashboard from '../../components/demo-dashboard'
-import EmailValidationCheck from '../../components/email-validation'
 
 type Props = {
   params: { role: string }
@@ -11,7 +10,7 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const role = params.role === 'aviram' ? 'Assistant' : params.role === 'omri' ? 'Owner' : 'Unknown'
+  const role = params.role === 'admin' ? 'Admin' : params.role === 'assistant' ? 'Assistant' : 'Unknown'
   
   return {
     title: `Demo Dashboard - ${role}`,
@@ -21,10 +20,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export async function generateStaticParams() {
   return [
-    { role: 'aviram' },
-    { role: 'omri' },
+    { role: 'admin' },
+    { role: 'assistant' },
   ]
 }
+
+// Determine user role based on email
+const getUserRole = (email: string): 'admin' | 'assistant' => {
+  if (email.toLowerCase() === 'elidor05@gmail.com') {
+    return 'admin';
+  }
+  return 'assistant';
+};
 
 async function getDashboardData(role: string, status: string = 'all') {
   // Return initial data directly - the client-side component will handle API calls
@@ -33,9 +40,9 @@ async function getDashboardData(role: string, status: string = 'all') {
     counts: {
       submitted: 2,
       liked: 2,
-      rejected_by_aviram: 1,
+      rejected_by_assistant: 1,
       approved: 1,
-      rejected_by_omri: 1,
+      rejected_by_admin: 1,
     }
   }
 }
@@ -47,8 +54,19 @@ export default async function RoleDashboardPage({ params, searchParams }: Props)
     notFound()
   }
 
-  if (!['aviram', 'omri'].includes(params.role)) {
+  // Validate that the role parameter is correct
+  if (!['admin', 'assistant'].includes(params.role)) {
     notFound()
+  }
+
+  // Verify that the user is accessing the correct role dashboard
+  const userEmail = user.emailAddresses[0]?.emailAddress;
+  if (userEmail) {
+    const userRole = getUserRole(userEmail);
+    // If user is trying to access a different role dashboard, redirect them
+    if (params.role !== userRole) {
+      notFound()
+    }
   }
 
   const initialData = await getDashboardData(params.role, searchParams.status)
@@ -61,7 +79,7 @@ export default async function RoleDashboardPage({ params, searchParams }: Props)
           <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                Demo Dashboard
+                Demo Dashboard - {params.role === 'admin' ? 'Admin Panel' : 'Assistant Panel'}
               </h1>
               <p className="text-sm text-gray-600">
                 Welcome, {user.firstName || user.emailAddresses[0]?.emailAddress}
@@ -69,22 +87,18 @@ export default async function RoleDashboardPage({ params, searchParams }: Props)
             </div>
             <div className="flex items-center space-x-4">
               <UserButton afterSignOutUrl="/" />
-              <SignOutButton>
-                <button className="text-sm text-gray-600 hover:text-gray-900">
-                  Sign Out
-                </button>
-              </SignOutButton>
             </div>
           </div>
         </div>
       </header>
-      
-      {/* Dashboard content */}
+
+      {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Email validation check */}
-        <EmailValidationCheck />
-        
-        <DemoDashboard initialData={initialData} />
+        <DemoDashboard 
+          role={params.role} 
+          initialData={initialData}
+          status={searchParams.status || 'all'}
+        />
       </main>
     </div>
   )

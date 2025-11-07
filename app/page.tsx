@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -8,12 +9,27 @@ export const metadata: Metadata = {
   description: 'Manage music demo submissions with role-based access control',
 }
 
+// Determine user role based on email
+const getUserRole = (email: string): 'admin' | 'assistant' => {
+  if (email.toLowerCase() === 'elidor05@gmail.com') {
+    return 'admin';
+  }
+  return 'assistant';
+};
+
 export default async function HomePage() {
   const user = await currentUser()
 
-  // If user is authenticated, redirect to dashboard
+  // If user is authenticated, redirect to appropriate dashboard based on role
   if (user) {
-    redirect('/dashboard/aviram') // You can customize this redirect logic
+    const userEmail = user.emailAddresses[0]?.emailAddress;
+    if (userEmail) {
+      const role = getUserRole(userEmail);
+      redirect(`/dashboard/${role}`);
+    } else {
+      // Fallback if no email found
+      redirect('/dashboard/assistant');
+    }
   }
 
   return (

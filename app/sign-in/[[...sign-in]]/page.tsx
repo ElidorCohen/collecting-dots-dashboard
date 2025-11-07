@@ -20,7 +20,7 @@ export default function SignInPage() {
                 "bg-blue-600 hover:bg-blue-700 text-sm normal-case",
             },
           }}
-          redirectUrl="/dashboard"
+          redirectUrl="/"
         />
       </div>
     </div>

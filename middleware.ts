@@ -12,26 +12,52 @@ const getAllowedEmails = () => {
   return emails;
 };
 
+// Get owner emails from environment variable
+const getOwnerEmails = () => {
+  const emails = process.env.LABEL_OWNER_EMAIL?.split(',').map(email => email.trim().toLowerCase()) || [];
+  return emails;
+};
+
+// Get assistant emails from environment variable
+const getAssistantEmails = () => {
+  const emails = process.env.ASSISTANT_EMAIL?.split(',').map(email => email.trim().toLowerCase()) || [];
+  return emails;
+};
+
+// Determine user role based on email
+const getUserRole = (email: string): 'admin' | 'assistant' => {
+  const normalizedEmail = email.toLowerCase();
+  const ownerEmails = getOwnerEmails();
+
+  // Check if email is in owner list
+  if (ownerEmails.includes(normalizedEmail)) {
+    return 'admin';
+  }
+
+  // Default to assistant (they still need to be in ALLOWED_EMAILS to access)
+  return 'assistant';
+};
+
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth();
-  
+
   // Allow public routes
   if (!isProtectedRoute(req)) {
     return NextResponse.next();
   }
-  
+
   // If it's a protected route and user is not signed in, redirect to sign-in
   if (!userId) {
     return NextResponse.redirect(new URL('/sign-in', req.url));
   }
 
-  // If user is signed in, check if their email is whitelisted
+  // If user is signed in, check if their email is whitelisted and determine role
   if (userId && sessionClaims) {
     // Try to get email from different possible locations in sessionClaims
     const userEmail = (
-      sessionClaims.email || 
-      sessionClaims.primaryEmailAddress?.emailAddress ||
-      sessionClaims.emailAddresses?.[0]?.emailAddress
+      (sessionClaims as any).email || 
+      (sessionClaims as any).primaryEmailAddress?.emailAddress ||
+      (sessionClaims as any).emailAddresses?.[0]?.emailAddress
     ) as string;
     
     const allowedEmails = getAllowedEmails();
@@ -43,6 +69,14 @@ export default clerkMiddleware(async (auth, req) => {
         // User email is not whitelisted, redirect to unauthorized page
         return NextResponse.redirect(new URL("/unauthorized", req.url));
       }
+      
+      // Determine user role and add to headers for downstream use
+      const userRole = getUserRole(userEmail);
+      const response = NextResponse.next();
+      response.headers.set('x-user-role', userRole);
+      response.headers.set('x-user-email', userEmail.toLowerCase());
+      
+      return response;
     }
   }
 
@@ -57,3 +91,5 @@ export const config = {
     '/(api|trpc)(.*)',
   ],
 };
+
+
