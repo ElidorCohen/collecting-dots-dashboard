@@ -92,6 +92,8 @@ export async function POST(
   console.log(`\n🚀 [${new Date().toISOString()}] Assistant action started`)
 
   try {
+    // TEMPORARILY COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE CLERK AUTH
+    /* CLERK AUTH CODE - UNCOMMENT TO RE-ENABLE
     // Verify authentication
     const authStart = Date.now()
     const { userId } = await auth()
@@ -103,6 +105,7 @@ export async function POST(
         { status: 401 }
       )
     }
+    */
 
     const paramsStart = Date.now()
     const { demo_id } = await params

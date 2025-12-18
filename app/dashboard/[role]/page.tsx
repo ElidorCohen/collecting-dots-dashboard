@@ -48,6 +48,8 @@ async function getDashboardData(role: string, status: string = 'all') {
 }
 
 export default async function RoleDashboardPage({ params, searchParams }: Props) {
+  // TEMPORARILY COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE CLERK AUTH
+  /* CLERK AUTH CODE - UNCOMMENT TO RE-ENABLE
   const user = await currentUser()
   
   if (!user) {
@@ -68,6 +70,7 @@ export default async function RoleDashboardPage({ params, searchParams }: Props)
       notFound()
     }
   }
+  */
 
   const initialData = await getDashboardData(params.role, searchParams.status)
 
@@ -82,11 +85,12 @@ export default async function RoleDashboardPage({ params, searchParams }: Props)
                 Demo Dashboard - {params.role === 'admin' ? 'Admin Panel' : 'Assistant Panel'}
               </h1>
               <p className="text-sm text-gray-600">
-                Welcome, {user.firstName || user.emailAddresses[0]?.emailAddress}
+                Welcome, Test User {/* TEMPORARY: {user.firstName || user.emailAddresses[0]?.emailAddress} */}
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <UserButton afterSignOutUrl="/" />
+              {/* TEMPORARILY COMMENTED OUT FOR TESTING */}
+              {/* <UserButton afterSignOutUrl="/" /> */}
             </div>
           </div>
         </div>

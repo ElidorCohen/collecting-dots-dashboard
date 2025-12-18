@@ -38,7 +38,12 @@ const getUserRole = (email: string): 'admin' | 'assistant' => {
   return 'assistant';
 };
 
+// TEMPORARILY COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE CLERK AUTH
 export default clerkMiddleware(async (auth, req) => {
+  // Allow all routes without authentication for testing
+  return NextResponse.next();
+
+  /* CLERK AUTH CODE - UNCOMMENT TO RE-ENABLE
   const { userId, sessionClaims } = await auth();
 
   // Allow public routes
@@ -81,6 +86,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   return NextResponse.next();
+  */
 });
 
 export const config = {

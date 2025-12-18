@@ -237,7 +237,18 @@ export class DemoService {
    * Test function to get all demos from the actual API endpoint
    */
   async getAllDemos(): Promise<ApiResponse<DemosApiResponse>> {
-    return apiClient.get<DemosApiResponse>(this.endpoint)
+    console.log('🎯 DEMO SERVICE: getAllDemos called')
+    console.log('  📍 Endpoint:', this.endpoint)
+    console.log('  🔗 Will call:', `/api${this.endpoint}`)
+    
+    try {
+      const result = await apiClient.get<DemosApiResponse>(this.endpoint)
+      console.log('✅ DEMO SERVICE: getAllDemos success', result)
+      return result
+    } catch (error) {
+      console.error('❌ DEMO SERVICE: getAllDemos error', error)
+      throw error
+    }
   }
 }
 

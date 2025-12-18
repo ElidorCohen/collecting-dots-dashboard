@@ -5,8 +5,10 @@ import type { ApiResponse, ApiError, RequestConfig } from '@/lib/services/types'
  * These values should be set via environment variables
  */
 const API_CONFIG = {
-  // Base URL for the Python Flask backend, fallback to local Next.js API
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
+  // Use relative URL for Next.js API routes (works on any port)
+  // For Next.js API routes, always use '/api' - this ensures it works regardless of the port
+  // If you need to call an external API, set NEXT_PUBLIC_API_BASE_URL to the full URL
+  BASE_URL: '/api',
   
   // API version (if versioned endpoints are used)
   VERSION: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
@@ -156,11 +158,21 @@ export class ApiClient {
     const url = `${this.baseURL}${endpoint}`
     const headers = await this.buildHeaders(customHeaders)
 
+    console.log('🔧 MAKE REQUEST DETAILS:')
+    console.log('  🌐 Full URL:', url)
+    console.log('  📝 Method:', method)
+    console.log('  📋 Headers:', headers)
+    console.log('  ⏱️ Timeout:', timeout)
+    if (body) {
+      console.log('  📦 Body:', typeof body === 'string' ? body : JSON.stringify(body, null, 2))
+    }
+
     // Create abort controller for timeout
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeout)
 
     try {
+      console.log('📡 Making fetch request...')
       const response = await fetch(url, {
         method,
         headers,
@@ -169,10 +181,36 @@ export class ApiClient {
         ...fetchOptions,
       })
 
+      console.log('📥 Fetch response received:')
+      console.log('  Status:', response.status)
+      console.log('  Status Text:', response.statusText)
+      console.log('  Headers:', Object.fromEntries(response.headers.entries()))
+      console.log('  OK:', response.ok)
+      
+      // Log response body for error debugging
+      if (!response.ok) {
+        const responseClone = response.clone()
+        try {
+          const errorBody = await responseClone.json()
+          console.error('  ❌ Error Response Body:', JSON.stringify(errorBody, null, 2))
+        } catch (e) {
+          const errorText = await responseClone.text()
+          console.error('  ❌ Error Response Text:', errorText)
+        }
+      }
+
       clearTimeout(timeoutId)
       return await this.handleResponse<T>(response)
     } catch (error) {
       clearTimeout(timeoutId)
+
+      console.error('💥 Fetch error caught:')
+      console.error('  Error type:', error instanceof Error ? error.constructor.name : typeof error)
+      console.error('  Error message:', error instanceof Error ? error.message : String(error))
+      console.error('  Error name:', error instanceof Error ? error.name : 'N/A')
+      if (error instanceof Error && error.stack) {
+        console.error('  Stack trace:', error.stack)
+      }
 
       if (error instanceof ApiClientError) {
         throw error
@@ -193,7 +231,26 @@ export class ApiClient {
    * GET request
    */
   async get<T>(endpoint: string, config?: Omit<RequestConfig, 'method' | 'body'>): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, { ...config, method: 'GET' })
+    // Add detailed logging for GET requests
+    console.log('🌐 API CLIENT GET REQUEST:')
+    console.log('  📍 Endpoint:', endpoint)
+    console.log('  🏠 Base URL:', this.baseURL)
+    console.log('  🔗 Full URL:', `${this.baseURL}${endpoint}`)
+    console.log('  ⚙️ Config:', config)
+    
+    try {
+      const result = await this.makeRequest<T>(endpoint, { ...config, method: 'GET' })
+      console.log('✅ API CLIENT GET SUCCESS:', result)
+      return result
+    } catch (error) {
+      console.error('❌ API CLIENT GET ERROR:', error)
+      console.error('  Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : 'Unknown',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      throw error
+    }
   }
 
   /**

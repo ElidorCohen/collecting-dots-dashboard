@@ -130,6 +130,8 @@ export async function POST(
   console.log(`\n🚀 [${new Date().toISOString()}] Owner action started`)
 
   try {
+    // TEMPORARILY COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE CLERK AUTH
+    /* CLERK AUTH CODE - UNCOMMENT TO RE-ENABLE
     // Verify authentication
     const authStart = Date.now()
     const authResult = await auth()
@@ -154,6 +156,7 @@ export async function POST(
         { status: 403 }
       )
     }
+    */
 
     const paramsStart = Date.now()
     const { demo_id } = await params

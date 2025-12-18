@@ -35,10 +35,13 @@ export function useApi<T = any>(options: UseApiOptions = {}) {
 
   const execute = useCallback(
     async <R = T>(apiCall: () => Promise<{ data: R }>): Promise<R> => {
+      console.log('🚀 USE_API: execute called')
       setState(prev => ({ ...prev, loading: true, error: null }))
 
       try {
+        console.log('📞 USE_API: Calling API function...')
         const response = await apiCall()
+        console.log('✅ USE_API: API call successful', response)
         const data = response.data
 
         setState({
@@ -50,7 +53,9 @@ export function useApi<T = any>(options: UseApiOptions = {}) {
         options.onSuccess?.(data)
         return data
       } catch (error) {
+        console.error('❌ USE_API: API call failed', error)
         const errorInfo = apiUtils.formatApiError(error)
+        console.error('  Formatted error:', errorInfo)
         
         setState({
           data: null,
