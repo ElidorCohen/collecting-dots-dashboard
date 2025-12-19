@@ -3,48 +3,13 @@ import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
-  '/api/demos(.*)'
+  '/api/demos(.*)',
+  '/api/artists(.*)',
+  '/api/events(.*)',
 ])
 
-// Get allowed emails from environment variable
-const getAllowedEmails = () => {
-  const emails = process.env.ALLOWED_EMAILS?.split(',').map(email => email.trim().toLowerCase()) || [];
-  return emails;
-};
-
-// Get owner emails from environment variable
-const getOwnerEmails = () => {
-  const emails = process.env.LABEL_OWNER_EMAIL?.split(',').map(email => email.trim().toLowerCase()) || [];
-  return emails;
-};
-
-// Get assistant emails from environment variable
-const getAssistantEmails = () => {
-  const emails = process.env.ASSISTANT_EMAIL?.split(',').map(email => email.trim().toLowerCase()) || [];
-  return emails;
-};
-
-// Determine user role based on email
-const getUserRole = (email: string): 'admin' | 'assistant' => {
-  const normalizedEmail = email.toLowerCase();
-  const ownerEmails = getOwnerEmails();
-
-  // Check if email is in owner list
-  if (ownerEmails.includes(normalizedEmail)) {
-    return 'admin';
-  }
-
-  // Default to assistant (they still need to be in ALLOWED_EMAILS to access)
-  return 'assistant';
-};
-
-// TEMPORARILY COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE CLERK AUTH
 export default clerkMiddleware(async (auth, req) => {
-  // Allow all routes without authentication for testing
-  return NextResponse.next();
-
-  /* CLERK AUTH CODE - UNCOMMENT TO RE-ENABLE
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
 
   // Allow public routes
   if (!isProtectedRoute(req)) {
@@ -56,37 +21,9 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL('/sign-in', req.url));
   }
 
-  // If user is signed in, check if their email is whitelisted and determine role
-  if (userId && sessionClaims) {
-    // Try to get email from different possible locations in sessionClaims
-    const userEmail = (
-      (sessionClaims as any).email || 
-      (sessionClaims as any).primaryEmailAddress?.emailAddress ||
-      (sessionClaims as any).emailAddresses?.[0]?.emailAddress
-    ) as string;
-    
-    const allowedEmails = getAllowedEmails();
-    
-    if (userEmail && allowedEmails.length > 0) {
-      const isEmailAllowed = allowedEmails.includes(userEmail.toLowerCase());
-      
-      if (!isEmailAllowed) {
-        // User email is not whitelisted, redirect to unauthorized page
-        return NextResponse.redirect(new URL("/unauthorized", req.url));
-      }
-      
-      // Determine user role and add to headers for downstream use
-      const userRole = getUserRole(userEmail);
-      const response = NextResponse.next();
-      response.headers.set('x-user-role', userRole);
-      response.headers.set('x-user-email', userEmail.toLowerCase());
-      
-      return response;
-    }
-  }
-
+  // User is authenticated - allow access
+  // Role is managed client-side via the role switcher
   return NextResponse.next();
-  */
 });
 
 export const config = {

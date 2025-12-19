@@ -1,6 +1,11 @@
 import { currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
+/**
+ * GET /api/validate-email
+ * Check if the current user is authenticated
+ * Any authenticated Clerk user is authorized to access the dashboard
+ */
 export async function GET() {
   try {
     const user = await currentUser()
@@ -10,13 +15,12 @@ export async function GET() {
     }
 
     const userEmail = user.emailAddresses[0]?.emailAddress?.toLowerCase()
-    const allowedEmails = process.env.ALLOWED_EMAILS?.split(',').map(email => email.trim().toLowerCase()) || []
     
-    const isAuthorized = userEmail && allowedEmails.includes(userEmail)
-    
+    // Any authenticated user is authorized
     return NextResponse.json({
-      authorized: isAuthorized,
-      reason: isAuthorized ? 'Email authorized' : 'Email not in whitelist'
+      authorized: true,
+      email: userEmail,
+      reason: 'Authenticated user'
     })
     
   } catch (error) {

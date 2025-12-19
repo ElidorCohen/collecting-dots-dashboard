@@ -1,46 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { Dropbox } from 'dropbox'
 import { getDropboxClient } from '@/lib/dropbox'
 import { updateDemoStatusInCache, getDemoStatusFromCache } from '../../route'
-
-// Get owner emails from environment variable
-const getOwnerEmails = () => {
-  const emails = process.env.LABEL_OWNER_EMAIL?.split(',').map(email => email.trim().toLowerCase()) || []
-  return emails
-}
-
-// Check if user is admin/owner
-async function isUserAdmin(): Promise<boolean> {
-  try {
-    const user = await currentUser()
-    
-    if (!user) {
-      console.log('❌ Debug - No user found')
-      return false
-    }
-
-    const userEmail = user.emailAddresses[0]?.emailAddress?.toLowerCase()
-    console.log('🔍 Debug - User email from currentUser():', userEmail)
-
-    if (!userEmail) {
-      console.log('❌ Debug - No user email found')
-      return false
-    }
-
-    const ownerEmails = getOwnerEmails()
-    console.log('🔍 Debug - Owner emails from env:', ownerEmails)
-    console.log('🔍 Debug - Comparing:', userEmail, 'with', ownerEmails)
-    
-    const isAdmin = ownerEmails.includes(userEmail)
-    console.log('🔍 Debug - Is admin result:', isAdmin)
-    
-    return isAdmin
-  } catch (error) {
-    console.error('❌ Error checking user admin status:', error)
-    return false
-  }
-}
 
 // Status folder mapping in Dropbox
 const STATUS_FOLDERS = {
@@ -130,12 +92,9 @@ export async function POST(
   console.log(`\n🚀 [${new Date().toISOString()}] Owner action started`)
 
   try {
-    // TEMPORARILY COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE CLERK AUTH
-    /* CLERK AUTH CODE - UNCOMMENT TO RE-ENABLE
     // Verify authentication
     const authStart = Date.now()
-    const authResult = await auth()
-    const { userId, sessionClaims } = authResult
+    const { userId } = await auth()
     console.log(`✓ Auth completed in ${Date.now() - authStart}ms`)
 
     if (!userId) {
@@ -145,18 +104,8 @@ export async function POST(
       )
     }
 
-    // Check if user is admin/owner
-    const adminCheckStart = Date.now()
-    const isAdmin = await isUserAdmin()
-    console.log(`✓ Admin check completed in ${Date.now() - adminCheckStart}ms`)
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'Forbidden: Admin access required' },
-        { status: 403 }
-      )
-    }
-    */
+    // Any authenticated user can perform owner actions when viewing as Label Owner
+    // Role is managed client-side via the role switcher
 
     const paramsStart = Date.now()
     const { demo_id } = await params

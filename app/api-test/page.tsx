@@ -49,7 +49,7 @@ export default function ApiTestPage() {
                 Email: {user?.emailAddresses[0]?.emailAddress || 'Not available'}
               </p>
               <p className="text-sm text-gray-600">
-                Role: {user?.emailAddresses[0]?.emailAddress === 'elidor05@gmail.com' ? 'Admin' : 'Assistant'}
+                Status: {user ? 'Authenticated' : 'Not authenticated'}
               </p>
               <p className="text-sm text-gray-600">
                 Clerk Loaded: {isLoaded ? 'Yes' : 'No'}

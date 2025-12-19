@@ -55,27 +55,53 @@
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Smooth transitions for theme changes */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
   }
 }
 
-/* Custom audio player styling */
+/* Custom audio player styling - Minimal theme-aware */
+audio {
+  width: 100%;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* Light mode audio styling */
 audio::-webkit-media-controls-panel {
-  background-color: #f8f9fa;
+  background-color: #f1f5f9 !important;
+  border-radius: calc(var(--radius) - 2px);
 }
 
-audio::-webkit-media-controls-play-button,
-audio::-webkit-media-controls-pause-button {
-  background-color: #ffffff;
-  border-radius: 4px;
+/* Dark mode audio styling */
+.dark audio::-webkit-media-controls-panel {
+  background-color: #1e293b !important;
 }
 
-audio::-webkit-media-controls-timeline {
-  background-color: #e9ecef;
-  border-radius: 4px;
-}
-
+/* Time display colors */
 audio::-webkit-media-controls-current-time-display,
 audio::-webkit-media-controls-time-remaining-display {
-  color: #6c757d;
-  font-size: 12px;
+  color: inherit;
+}
+
+.dark audio::-webkit-media-controls-current-time-display,
+.dark audio::-webkit-media-controls-time-remaining-display {
+  color: #e2e8f0 !important;
+}
+
+/* Focus styling */
+audio:focus {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+audio:focus:not(:focus-visible) {
+  outline: none;
 }

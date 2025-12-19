@@ -20,7 +20,7 @@ interface ConfirmationDialogProps {
   description: string
   confirmText: string
   cancelText?: string
-  type?: "like" | "reject" | "approve" | "warning" | "undo_reject"
+  type?: "like" | "reject" | "approve" | "warning" | "undo_reject" | "destructive"
   trackTitle?: string
   isLoading?: boolean
 }
@@ -50,6 +50,11 @@ const typeConfig = {
     icon: ThumbsUp,
     iconColor: "text-blue-600",
     confirmButtonClass: "bg-blue-600 hover:bg-blue-700 text-white"
+  },
+  destructive: {
+    icon: XCircle,
+    iconColor: "text-red-600",
+    confirmButtonClass: "bg-red-600 hover:bg-red-700 text-white"
   }
 }
 

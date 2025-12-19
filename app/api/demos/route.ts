@@ -319,8 +319,6 @@ async function fetchDemosFromFolder(
  */
 export async function GET(request: NextRequest) {
   try {
-    // TEMPORARILY COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE CLERK AUTH
-    /* CLERK AUTH CODE - UNCOMMENT TO RE-ENABLE
     // Verify authentication with Clerk
     const { userId } = await auth()
 
@@ -330,7 +328,6 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
-    */
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams
