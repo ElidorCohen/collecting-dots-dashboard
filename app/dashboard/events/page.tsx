@@ -17,12 +17,13 @@ import {
 import {
   ConfirmationDialog,
 } from '@/components/ui/confirmation-dialog'
-import { Calendar, Plus, Trash2, MapPin, Users as UsersIcon, CalendarDays, Loader2 } from 'lucide-react'
+import { Calendar, Plus, Trash2, Edit2, MapPin, Users as UsersIcon, CalendarDays, Clock, Loader2 } from 'lucide-react'
 
 interface Event {
   event_title: string
   location: string
-  date_time: string
+  date: string
+  times: string
   artists: string
 }
 
@@ -34,12 +35,15 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     event_title: '',
     location: '',
-    date_time: '',
+    date: '',
+    times: '',
     artists: '',
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
@@ -87,8 +91,11 @@ export default function EventsPage() {
     if (!formData.location.trim()) {
       errors.location = 'Location is required'
     }
-    if (!formData.date_time.trim()) {
-      errors.date_time = 'Date is required'
+    if (!formData.date.trim()) {
+      errors.date = 'Date is required'
+    }
+    if (!formData.times.trim()) {
+      errors.times = 'Times are required'
     }
     if (!formData.artists.trim()) {
       errors.artists = 'Artists are required'
@@ -96,6 +103,49 @@ export default function EventsPage() {
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
+  }
+
+  const openAddDialog = () => {
+    setIsEditing(false)
+    setEditingIndex(null)
+    setFormData({
+      event_title: '',
+      location: '',
+      date: '',
+      times: '',
+      artists: '',
+    })
+    setFormErrors({})
+    setIsDialogOpen(true)
+  }
+
+  const openEditDialog = (index: number) => {
+    const event = events[index]
+    setIsEditing(true)
+    setEditingIndex(index)
+    setFormData({
+      event_title: event.event_title,
+      location: event.location,
+      date: event.date,
+      times: event.times,
+      artists: event.artists,
+    })
+    setFormErrors({})
+    setIsDialogOpen(true)
+  }
+
+  const closeDialog = () => {
+    setIsDialogOpen(false)
+    setIsEditing(false)
+    setEditingIndex(null)
+    setFormData({
+      event_title: '',
+      location: '',
+      date: '',
+      times: '',
+      artists: '',
+    })
+    setFormErrors({})
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,34 +157,47 @@ export default function EventsPage() {
 
     try {
       setIsSubmitting(true)
-      const response = await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
+      
+      if (isEditing && editingIndex !== null) {
+        // Update existing event
+        const response = await fetch('/api/events', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            index: editingIndex,
+            ...formData,
+          }),
+        })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to add event')
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to update event')
+        }
+      } else {
+        // Add new event
+        const response = await fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to add event')
+        }
       }
 
-      // Reset form and close dialog
-      setFormData({
-        event_title: '',
-        location: '',
-        date_time: '',
-        artists: '',
-      })
-      setFormErrors({})
-      setIsDialogOpen(false)
+      closeDialog()
       
       // Refresh events list
       await fetchEvents()
     } catch (error) {
-      console.error('Error adding event:', error)
-      alert(error instanceof Error ? error.message : 'Failed to add event')
+      console.error('Error saving event:', error)
+      alert(error instanceof Error ? error.message : 'Failed to save event')
     } finally {
       setIsSubmitting(false)
     }
@@ -184,7 +247,7 @@ export default function EventsPage() {
             <h1 className="text-3xl font-bold text-foreground">Events</h1>
             <p className="text-muted-foreground mt-1">Manage your events</p>
           </div>
-          <Button onClick={() => setIsDialogOpen(true)}>
+          <Button onClick={openAddDialog}>
             <Plus className="w-4 h-4 mr-2" />
             Add Event
           </Button>
@@ -209,7 +272,7 @@ export default function EventsPage() {
               <p className="text-muted-foreground mb-4">
                 Get started by adding your first event.
               </p>
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button onClick={openAddDialog}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Event
               </Button>
@@ -231,7 +294,11 @@ export default function EventsPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <CalendarDays className="w-4 h-4" />
-                          <span>{event.date_time}</span>
+                          <span>{event.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          <span>{event.times}</span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <MapPin className="w-4 h-4" />
@@ -243,14 +310,24 @@ export default function EventsPage() {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(index)}
-                      className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(index)}
+                        className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(index)}
+                        className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -258,13 +335,13 @@ export default function EventsPage() {
           </div>
         )}
 
-        {/* Add Event Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+        {/* Add/Edit Event Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={closeDialog}>
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add New Event</DialogTitle>
+              <DialogTitle>{isEditing ? 'Edit Event' : 'Add New Event'}</DialogTitle>
               <DialogDescription>
-                Fill in all the details for the new event. All fields are required.
+                Fill in all the details for the event. All fields are required.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -284,16 +361,30 @@ export default function EventsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="date_time">Event Date</Label>
+                  <Label htmlFor="date">Event Date</Label>
                   <Input
-                    id="date_time"
-                    value={formData.date_time}
-                    onChange={(e) => handleInputChange('date_time', e.target.value)}
-                    placeholder="e.g., 15/12/2025"
-                    className={formErrors.date_time ? 'border-red-500' : ''}
+                    id="date"
+                    value={formData.date}
+                    onChange={(e) => handleInputChange('date', e.target.value)}
+                    placeholder="e.g., 28/12/2025"
+                    className={formErrors.date ? 'border-red-500' : ''}
                   />
-                  {formErrors.date_time && (
-                    <p className="text-sm text-red-500">{formErrors.date_time}</p>
+                  {formErrors.date && (
+                    <p className="text-sm text-red-500">{formErrors.date}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="times">Event Times</Label>
+                  <Input
+                    id="times"
+                    value={formData.times}
+                    onChange={(e) => handleInputChange('times', e.target.value)}
+                    placeholder="e.g., 08:00 - 23:00"
+                    className={formErrors.times ? 'border-red-500' : ''}
+                  />
+                  {formErrors.times && (
+                    <p className="text-sm text-red-500">{formErrors.times}</p>
                   )}
                 </div>
 
@@ -329,16 +420,7 @@ export default function EventsPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    setIsDialogOpen(false)
-                    setFormData({
-                      event_title: '',
-                      location: '',
-                      date_time: '',
-                      artists: '',
-                    })
-                    setFormErrors({})
-                  }}
+                  onClick={closeDialog}
                   disabled={isSubmitting}
                 >
                   Cancel
@@ -347,10 +429,10 @@ export default function EventsPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Adding...
+                      {isEditing ? 'Updating...' : 'Adding...'}
                     </>
                   ) : (
-                    'Add Event'
+                    isEditing ? 'Update Event' : 'Add Event'
                   )}
                 </Button>
               </DialogFooter>
@@ -378,4 +460,3 @@ export default function EventsPage() {
     </DashboardLayout>
   )
 }
-
