@@ -9,6 +9,14 @@ export type * from './types'
 // Export services
 export { demoService, DemoService } from './demo-service'
 export { authService, AuthService } from './auth-service'
+export { EmailService, getEmailService } from './email'
+
+// Export email templates for customization
+export {
+  getDemoLikedEmail,
+  getDemoRejectedEmail,
+  getDemoApprovedEmail,
+} from './email-templates'
 
 // Export demo-specific types for convenience
 export type {

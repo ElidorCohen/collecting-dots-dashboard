@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { Dropbox } from 'dropbox'
-import { getDropboxClient } from '@/lib/dropbox'
+import { getDropboxClient, getValidAccessToken } from '@/lib/dropbox'
 import { updateDemoStatusInCache, getDemoStatusFromCache } from '../../route'
+import { getEmailService } from '@/lib/services/email'
+
+// Demo metadata interface
+interface DemoMetadata {
+  artist_name: string
+  track_title: string
+  email: string
+  full_name: string
+  instagram_username: string | null
+  beatport: string | null
+  facebook: string | null
+  x_twitter: string | null
+  submitted_at: string
+  demo_id: string
+}
 
 // Status folder mapping in Dropbox
 const STATUS_FOLDERS = {
@@ -78,6 +93,96 @@ async function moveDemoFiles(
     to_path: metadataDestPath,
     autorename: false,
   })
+}
+
+/**
+ * Fetch demo metadata from Dropbox
+ */
+async function fetchDemoMetadata(
+  folderPath: string,
+  metadataFileName: string
+): Promise<DemoMetadata | null> {
+  try {
+    const metadataPath = `${folderPath}/${metadataFileName}`
+    const accessToken = await getValidAccessToken()
+
+    const downloadResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Dropbox-API-Arg': JSON.stringify({ path: metadataPath }),
+      },
+    })
+
+    if (!downloadResponse.ok) {
+      console.error(`Failed to download metadata: ${downloadResponse.status}`)
+      return null
+    }
+
+    const metadataText = await downloadResponse.text()
+    return JSON.parse(metadataText) as DemoMetadata
+  } catch (error) {
+    console.error('Error fetching demo metadata:', error)
+    return null
+  }
+}
+
+/**
+ * Send email notification based on action type
+ */
+async function sendActionEmail(
+  action: string,
+  metadata: DemoMetadata,
+  demoId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const emailService = getEmailService()
+
+  if (!emailService.isConfigured()) {
+    console.warn('Email service not configured, skipping notification')
+    return { sent: false, error: 'Email service not configured' }
+  }
+
+  try {
+    let emailSent = false
+
+    switch (action) {
+      case 'approve':
+        // Final approval - send approved notification
+        emailSent = await emailService.sendDemoApprovedNotification(
+          metadata.email,
+          metadata.artist_name,
+          metadata.track_title,
+          demoId
+        )
+        break
+      case 'like':
+        // Owner like - send liked notification
+        emailSent = await emailService.sendDemoLikedNotification(
+          metadata.email,
+          metadata.artist_name,
+          metadata.track_title,
+          demoId
+        )
+        break
+      case 'reject':
+        // Rejection - send rejected notification
+        emailSent = await emailService.sendDemoRejectedNotification(
+          metadata.email,
+          metadata.artist_name,
+          metadata.track_title,
+          demoId
+        )
+        break
+      default:
+        // No email for undo_reject
+        return { sent: false, error: 'No email for this action type' }
+    }
+
+    return { sent: emailSent, error: emailSent ? undefined : 'Failed to send email' }
+  } catch (error) {
+    console.error('Error sending action email:', error)
+    return { sent: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
 }
 
 /**
@@ -208,12 +313,36 @@ export async function POST(
     await updateDemoStatusInCache(demo_id, newStatus)
     console.log(`✓ Cache update completed in ${Date.now() - cacheUpdateStart}ms`)
 
+    // Send email notification (non-blocking)
+    let emailStatus: { sent: boolean; error?: string } = { sent: false, error: 'Email not attempted' }
+    
+    if (action === 'approve' || action === 'reject' || action === 'like') {
+      const emailStart = Date.now()
+      // Fetch metadata from the destination folder (files have been moved)
+      const metadata = await fetchDemoMetadata(
+        destinationFolderPath,
+        demoFiles.metadataFile.name
+      )
+      
+      if (metadata) {
+        emailStatus = await sendActionEmail(action, metadata, demo_id)
+        console.log(`✓ Email notification ${emailStatus.sent ? 'sent' : 'failed'} in ${Date.now() - emailStart}ms`)
+      } else {
+        emailStatus = { sent: false, error: 'Could not fetch demo metadata' }
+        console.log(`⚠️  Could not fetch metadata for email notification`)
+      }
+    }
+
     console.log(`✅ Total request time: ${Date.now() - startTime}ms\n`)
 
     return NextResponse.json({
       message: `Successfully performed ${action} on demo`,
       demo_id,
       action,
+      email_status: {
+        notification_sent: emailStatus.sent,
+        error: emailStatus.error || null,
+      },
     })
   } catch (error) {
     console.error('Error in POST /api/demos/[demo_id]/owner-action:', error)
