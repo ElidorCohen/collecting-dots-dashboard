@@ -9,6 +9,8 @@ interface Event {
   date: string
   times: string
   artists: string
+  event_external_url?: string
+  event_instagram_post?: string
 }
 
 interface EventsData {
@@ -58,7 +60,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { event_title, location, date, times, artists } = body
+    const { event_title, location, date, times, artists, event_external_url, event_instagram_post } = body
 
     // Validate required fields
     if (!event_title || !location || !date || !times || !artists) {
@@ -111,6 +113,8 @@ export async function POST(request: NextRequest) {
       date: date.trim(),
       times: times.trim(),
       artists: artists.trim(),
+      ...(event_external_url && event_external_url.trim() && { event_external_url: event_external_url.trim() }),
+      ...(event_instagram_post && event_instagram_post.trim() && { event_instagram_post: event_instagram_post.trim() }),
     }
 
     const updatedEvents: EventsData = {
@@ -151,7 +155,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { index, event_title, location, date, times, artists } = body
+    const { index, event_title, location, date, times, artists, event_external_url, event_instagram_post } = body
 
     if (index === undefined || index === null) {
       return NextResponse.json(
@@ -220,12 +224,15 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update event at index
+    // Include optional fields only if they have values (empty strings mean clear the field)
     const updatedEvent: Event = {
       event_title: event_title.trim(),
       location: location.trim(),
       date: date.trim(),
       times: times.trim(),
       artists: artists.trim(),
+      ...(event_external_url && event_external_url.trim() && { event_external_url: event_external_url.trim() }),
+      ...(event_instagram_post && event_instagram_post.trim() && { event_instagram_post: event_instagram_post.trim() }),
     }
 
     const updatedEvents: EventsData = {

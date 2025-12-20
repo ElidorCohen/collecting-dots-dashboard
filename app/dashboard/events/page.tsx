@@ -17,7 +17,7 @@ import {
 import {
   ConfirmationDialog,
 } from '@/components/ui/confirmation-dialog'
-import { Calendar, Plus, Trash2, Edit2, MapPin, Users as UsersIcon, CalendarDays, Clock, Loader2 } from 'lucide-react'
+import { Calendar, Plus, Trash2, Edit2, MapPin, Users as UsersIcon, CalendarDays, Clock, Loader2, ExternalLink, Instagram } from 'lucide-react'
 
 interface Event {
   event_title: string
@@ -25,6 +25,8 @@ interface Event {
   date: string
   times: string
   artists: string
+  event_external_url?: string
+  event_instagram_post?: string
 }
 
 interface EventsData {
@@ -45,6 +47,8 @@ export default function EventsPage() {
     date: '',
     times: '',
     artists: '',
+    event_external_url: '',
+    event_instagram_post: '',
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -114,6 +118,8 @@ export default function EventsPage() {
       date: '',
       times: '',
       artists: '',
+      event_external_url: '',
+      event_instagram_post: '',
     })
     setFormErrors({})
     setIsDialogOpen(true)
@@ -129,6 +135,8 @@ export default function EventsPage() {
       date: event.date,
       times: event.times,
       artists: event.artists,
+      event_external_url: event.event_external_url || '',
+      event_instagram_post: event.event_instagram_post || '',
     })
     setFormErrors({})
     setIsDialogOpen(true)
@@ -144,6 +152,8 @@ export default function EventsPage() {
       date: '',
       times: '',
       artists: '',
+      event_external_url: '',
+      event_instagram_post: '',
     })
     setFormErrors({})
   }
@@ -308,6 +318,32 @@ export default function EventsPage() {
                           <UsersIcon className="w-4 h-4" />
                           <span>{event.artists}</span>
                         </div>
+                        {event.event_external_url && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <ExternalLink className="w-4 h-4" />
+                            <a 
+                              href={event.event_external_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              External URL
+                            </a>
+                          </div>
+                        )}
+                        {event.event_instagram_post && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Instagram className="w-4 h-4" />
+                            <a 
+                              href={event.event_instagram_post} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              Instagram Post
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -341,7 +377,7 @@ export default function EventsPage() {
             <DialogHeader>
               <DialogTitle>{isEditing ? 'Edit Event' : 'Add New Event'}</DialogTitle>
               <DialogDescription>
-                Fill in all the details for the event. All fields are required.
+                Fill in all the details for the event. Fields marked with (Optional) are not required.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -413,6 +449,36 @@ export default function EventsPage() {
                   />
                   {formErrors.artists && (
                     <p className="text-sm text-red-500">{formErrors.artists}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="event_external_url">Event External URL (Optional)</Label>
+                  <Input
+                    id="event_external_url"
+                    type="url"
+                    value={formData.event_external_url}
+                    onChange={(e) => handleInputChange('event_external_url', e.target.value)}
+                    placeholder="https://example.com/event"
+                    className={formErrors.event_external_url ? 'border-red-500' : ''}
+                  />
+                  {formErrors.event_external_url && (
+                    <p className="text-sm text-red-500">{formErrors.event_external_url}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="event_instagram_post">Event Instagram Post URL (Optional)</Label>
+                  <Input
+                    id="event_instagram_post"
+                    type="url"
+                    value={formData.event_instagram_post}
+                    onChange={(e) => handleInputChange('event_instagram_post', e.target.value)}
+                    placeholder="https://www.instagram.com/p/..."
+                    className={formErrors.event_instagram_post ? 'border-red-500' : ''}
+                  />
+                  {formErrors.event_instagram_post && (
+                    <p className="text-sm text-red-500">{formErrors.event_instagram_post}</p>
                   )}
                 </div>
               </div>
