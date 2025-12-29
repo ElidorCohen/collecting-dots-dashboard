@@ -93,12 +93,48 @@ export default function ArtistsPage() {
     }
     if (!formData.artist_soundcloud.trim()) {
       errors.artist_soundcloud = 'SoundCloud URL is required'
+    } else {
+      // Validate SoundCloud URL
+      try {
+        const url = new URL(formData.artist_soundcloud.trim())
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          errors.artist_soundcloud = 'URL must start with http:// or https://'
+        } else if (!url.hostname.includes('soundcloud.com')) {
+          errors.artist_soundcloud = 'Must be a SoundCloud URL (soundcloud.com)'
+        }
+      } catch {
+        errors.artist_soundcloud = 'Please enter a valid SoundCloud URL'
+      }
     }
     if (!formData.artist_spotify.trim()) {
       errors.artist_spotify = 'Spotify URL is required'
+    } else {
+      // Validate Spotify URL
+      try {
+        const url = new URL(formData.artist_spotify.trim())
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          errors.artist_spotify = 'URL must start with http:// or https://'
+        } else if (!url.hostname.includes('spotify.com')) {
+          errors.artist_spotify = 'Must be a Spotify URL (spotify.com)'
+        }
+      } catch {
+        errors.artist_spotify = 'Please enter a valid Spotify URL'
+      }
     }
     if (!formData.artist_beatport.trim()) {
       errors.artist_beatport = 'Beatport URL is required'
+    } else {
+      // Validate Beatport URL
+      try {
+        const url = new URL(formData.artist_beatport.trim())
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          errors.artist_beatport = 'URL must start with http:// or https://'
+        } else if (!url.hostname.includes('beatport.com')) {
+          errors.artist_beatport = 'Must be a Beatport URL (beatport.com)'
+        }
+      } catch {
+        errors.artist_beatport = 'Please enter a valid Beatport URL'
+      }
     }
 
     setFormErrors(errors)
@@ -388,7 +424,7 @@ export default function ArtistsPage() {
                     id="artist_name"
                     value={formData.artist_name}
                     onChange={(e) => handleInputChange('artist_name', e.target.value)}
-                    placeholder="e.g., Omri."
+                    placeholder="Omri."
                     className={formErrors.artist_name ? 'border-red-500' : ''}
                   />
                   {formErrors.artist_name && (
@@ -402,11 +438,11 @@ export default function ArtistsPage() {
                     id="artist_instagram_username"
                     value={formData.artist_instagram_username}
                     onChange={(e) => handleInputChange('artist_instagram_username', e.target.value)}
-                    placeholder="e.g., rafael__music"
+                    placeholder="rafael__music"
                     className={formErrors.artist_instagram_username ? 'border-red-500' : ''}
                   />
                   {formErrors.artist_instagram_username && (
-                    <p className="text-sm text-red-500">{formErrors.artist_instagram_username}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_instagram_username}</p>
                   )}
                 </div>
 
@@ -420,8 +456,11 @@ export default function ArtistsPage() {
                     placeholder="https://soundcloud.com/..."
                     className={formErrors.artist_soundcloud ? 'border-red-500' : ''}
                   />
+                  {!formErrors.artist_soundcloud && formData.artist_soundcloud && (
+                    <p className="text-xs text-muted-foreground">Must be a valid SoundCloud URL</p>
+                  )}
                   {formErrors.artist_soundcloud && (
-                    <p className="text-sm text-red-500">{formErrors.artist_soundcloud}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_soundcloud}</p>
                   )}
                 </div>
 
@@ -435,8 +474,11 @@ export default function ArtistsPage() {
                     placeholder="https://open.spotify.com/artist/..."
                     className={formErrors.artist_spotify ? 'border-red-500' : ''}
                   />
+                  {!formErrors.artist_spotify && formData.artist_spotify && (
+                    <p className="text-xs text-muted-foreground">Must be a valid Spotify URL</p>
+                  )}
                   {formErrors.artist_spotify && (
-                    <p className="text-sm text-red-500">{formErrors.artist_spotify}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_spotify}</p>
                   )}
                 </div>
 
@@ -450,8 +492,11 @@ export default function ArtistsPage() {
                     placeholder="https://www.beatport.com/artist/..."
                     className={formErrors.artist_beatport ? 'border-red-500' : ''}
                   />
+                  {!formErrors.artist_beatport && formData.artist_beatport && (
+                    <p className="text-xs text-muted-foreground">Must be a valid Beatport URL</p>
+                  )}
                   {formErrors.artist_beatport && (
-                    <p className="text-sm text-red-500">{formErrors.artist_beatport}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_beatport}</p>
                   )}
                 </div>
               </div>

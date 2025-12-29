@@ -16,6 +16,60 @@ interface ArtistsData {
 }
 
 /**
+ * Validate SoundCloud URL
+ */
+function validateSoundCloudURL(url: string): { valid: boolean; error?: string } {
+  try {
+    const urlObj = new URL(url.trim())
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return { valid: false, error: 'URL must start with http:// or https://' }
+    }
+    if (!urlObj.hostname.includes('soundcloud.com')) {
+      return { valid: false, error: 'Must be a SoundCloud URL (soundcloud.com)' }
+    }
+    return { valid: true }
+  } catch {
+    return { valid: false, error: 'Please enter a valid SoundCloud URL' }
+  }
+}
+
+/**
+ * Validate Spotify URL
+ */
+function validateSpotifyURL(url: string): { valid: boolean; error?: string } {
+  try {
+    const urlObj = new URL(url.trim())
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return { valid: false, error: 'URL must start with http:// or https://' }
+    }
+    if (!urlObj.hostname.includes('spotify.com')) {
+      return { valid: false, error: 'Must be a Spotify URL (spotify.com)' }
+    }
+    return { valid: true }
+  } catch {
+    return { valid: false, error: 'Please enter a valid Spotify URL' }
+  }
+}
+
+/**
+ * Validate Beatport URL
+ */
+function validateBeatportURL(url: string): { valid: boolean; error?: string } {
+  try {
+    const urlObj = new URL(url.trim())
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return { valid: false, error: 'URL must start with http:// or https://' }
+    }
+    if (!urlObj.hostname.includes('beatport.com')) {
+      return { valid: false, error: 'Must be a Beatport URL (beatport.com)' }
+    }
+    return { valid: true }
+  } catch {
+    return { valid: false, error: 'Please enter a valid Beatport URL' }
+  }
+}
+
+/**
  * GET /api/artists - Fetch all artists from Dropbox
  */
 export async function GET() {
@@ -186,6 +240,33 @@ export async function PUT(request: NextRequest) {
     ) {
       return NextResponse.json(
         { error: 'All fields must contain actual text' },
+        { status: 400 }
+      )
+    }
+
+    // Validate SoundCloud URL
+    const soundcloudValidation = validateSoundCloudURL(artist_soundcloud)
+    if (!soundcloudValidation.valid) {
+      return NextResponse.json(
+        { error: `SoundCloud URL: ${soundcloudValidation.error}` },
+        { status: 400 }
+      )
+    }
+
+    // Validate Spotify URL
+    const spotifyValidation = validateSpotifyURL(artist_spotify)
+    if (!spotifyValidation.valid) {
+      return NextResponse.json(
+        { error: `Spotify URL: ${spotifyValidation.error}` },
+        { status: 400 }
+      )
+    }
+
+    // Validate Beatport URL
+    const beatportValidation = validateBeatportURL(artist_beatport)
+    if (!beatportValidation.valid) {
+      return NextResponse.json(
+        { error: `Beatport URL: ${beatportValidation.error}` },
         { status: 400 }
       )
     }

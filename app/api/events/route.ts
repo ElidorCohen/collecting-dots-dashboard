@@ -18,6 +18,42 @@ interface EventsData {
 }
 
 /**
+ * Validate date format: DD/MM/YYYY
+ */
+function validateDateFormat(date: string): { valid: boolean; error?: string } {
+  const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/
+  if (!dateRegex.test(date.trim())) {
+    return { valid: false, error: 'Date must be in format DD/MM/YYYY (15/11/2025)' }
+  }
+  
+  const [, day, month, year] = date.trim().match(dateRegex) || []
+  const dayNum = parseInt(day, 10)
+  const monthNum = parseInt(month, 10)
+  const yearNum = parseInt(year, 10)
+  
+  if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900 || yearNum > 2100) {
+    return { valid: false, error: 'Please enter a valid date' }
+  }
+  
+  return { valid: true }
+}
+
+/**
+ * Validate URL format
+ */
+function validateURL(url: string): { valid: boolean; error?: string } {
+  try {
+    const urlObj = new URL(url.trim())
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return { valid: false, error: 'URL must start with http:// or https://' }
+    }
+    return { valid: true }
+  } catch {
+    return { valid: false, error: 'Please enter a valid URL' }
+  }
+}
+
+/**
  * GET /api/events - Fetch all events from Dropbox
  */
 export async function GET() {
@@ -192,6 +228,37 @@ export async function PUT(request: NextRequest) {
         { error: 'All fields must contain actual text' },
         { status: 400 }
       )
+    }
+
+    // Validate date format
+    const dateValidation = validateDateFormat(date)
+    if (!dateValidation.valid) {
+      return NextResponse.json(
+        { error: dateValidation.error },
+        { status: 400 }
+      )
+    }
+
+    // Validate external URL if provided
+    if (event_external_url && event_external_url.trim()) {
+      const urlValidation = validateURL(event_external_url)
+      if (!urlValidation.valid) {
+        return NextResponse.json(
+          { error: `Event External URL: ${urlValidation.error}` },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Validate Instagram post URL if provided
+    if (event_instagram_post && event_instagram_post.trim()) {
+      const urlValidation = validateURL(event_instagram_post)
+      if (!urlValidation.valid) {
+        return NextResponse.json(
+          { error: `Event Instagram Post URL: ${urlValidation.error}` },
+          { status: 400 }
+        )
+      }
     }
 
     const accessToken = await getValidAccessToken()

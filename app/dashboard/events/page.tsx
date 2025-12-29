@@ -97,12 +97,52 @@ export default function EventsPage() {
     }
     if (!formData.date.trim()) {
       errors.date = 'Date is required'
+    } else {
+      // Validate date format: DD/MM/YYYY
+      const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/
+      if (!dateRegex.test(formData.date.trim())) {
+        errors.date = 'Date must be in format DD/MM/YYYY (15/11/2025)'
+      } else {
+        const [, day, month, year] = formData.date.trim().match(dateRegex) || []
+        const dayNum = parseInt(day, 10)
+        const monthNum = parseInt(month, 10)
+        const yearNum = parseInt(year, 10)
+        
+        // Basic validation: day 1-31, month 1-12, year reasonable
+        if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900 || yearNum > 2100) {
+          errors.date = 'Please enter a valid date'
+        }
+      }
     }
     if (!formData.times.trim()) {
       errors.times = 'Times are required'
     }
     if (!formData.artists.trim()) {
       errors.artists = 'Artists are required'
+    }
+    
+    // Validate external URL if provided
+    if (formData.event_external_url.trim()) {
+      try {
+        const url = new URL(formData.event_external_url.trim())
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          errors.event_external_url = 'URL must start with http:// or https://'
+        }
+      } catch {
+        errors.event_external_url = 'Please enter a valid URL (https://example.com/event)'
+      }
+    }
+    
+    // Validate Instagram post URL if provided
+    if (formData.event_instagram_post.trim()) {
+      try {
+        const url = new URL(formData.event_instagram_post.trim())
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          errors.event_instagram_post = 'URL must start with http:// or https://'
+        }
+      } catch {
+        errors.event_instagram_post = 'Please enter a valid URL (https://www.instagram.com/p/...)'
+      }
     }
 
     setFormErrors(errors)
@@ -388,7 +428,7 @@ export default function EventsPage() {
                     id="event_title"
                     value={formData.event_title}
                     onChange={(e) => handleInputChange('event_title', e.target.value)}
-                    placeholder="e.g., Collecting Dots Showcase"
+                    placeholder="Collecting Dots Showcase"
                     className={formErrors.event_title ? 'border-red-500' : ''}
                   />
                   {formErrors.event_title && (
@@ -402,11 +442,12 @@ export default function EventsPage() {
                     id="date"
                     value={formData.date}
                     onChange={(e) => handleInputChange('date', e.target.value)}
-                    placeholder="e.g., 28/12/2025"
+                    placeholder="15/11/2025"
                     className={formErrors.date ? 'border-red-500' : ''}
                   />
+                  <p className="text-xs text-muted-foreground">Format: DD/MM/YYYY (15/11/2025)</p>
                   {formErrors.date && (
-                    <p className="text-sm text-red-500">{formErrors.date}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.date}</p>
                   )}
                 </div>
 
@@ -416,11 +457,12 @@ export default function EventsPage() {
                     id="times"
                     value={formData.times}
                     onChange={(e) => handleInputChange('times', e.target.value)}
-                    placeholder="e.g., 08:00 - 23:00"
+                    placeholder="12:00 - 22:00"
                     className={formErrors.times ? 'border-red-500' : ''}
                   />
+                  <p className="text-xs text-muted-foreground">Example: 12:00 - 22:00</p>
                   {formErrors.times && (
-                    <p className="text-sm text-red-500">{formErrors.times}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.times}</p>
                   )}
                 </div>
 
@@ -430,11 +472,11 @@ export default function EventsPage() {
                     id="location"
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
-                    placeholder="e.g., Warehouse 23, Berlin, Germany"
+                    placeholder="Warehouse 23, Berlin, Germany"
                     className={formErrors.location ? 'border-red-500' : ''}
                   />
                   {formErrors.location && (
-                    <p className="text-sm text-red-500">{formErrors.location}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.location}</p>
                   )}
                 </div>
 
@@ -444,11 +486,12 @@ export default function EventsPage() {
                     id="artists"
                     value={formData.artists}
                     onChange={(e) => handleInputChange('artists', e.target.value)}
-                    placeholder="e.g., Omri., Adaru, Sapian"
+                    placeholder="OMRI., Dor Danino, Abel, Prlli, Lovers"
                     className={formErrors.artists ? 'border-red-500' : ''}
                   />
+                  <p className="text-xs text-muted-foreground">Artist names separated by commas (OMRI., Dor Danino, Abel, Prlli, Lovers)</p>
                   {formErrors.artists && (
-                    <p className="text-sm text-red-500">{formErrors.artists}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artists}</p>
                   )}
                 </div>
 
@@ -462,8 +505,11 @@ export default function EventsPage() {
                     placeholder="https://example.com/event"
                     className={formErrors.event_external_url ? 'border-red-500' : ''}
                   />
+                  {!formErrors.event_external_url && formData.event_external_url && (
+                    <p className="text-xs text-muted-foreground">Must be a valid URL starting with http:// or https://</p>
+                  )}
                   {formErrors.event_external_url && (
-                    <p className="text-sm text-red-500">{formErrors.event_external_url}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.event_external_url}</p>
                   )}
                 </div>
 
@@ -477,8 +523,11 @@ export default function EventsPage() {
                     placeholder="https://www.instagram.com/p/..."
                     className={formErrors.event_instagram_post ? 'border-red-500' : ''}
                   />
+                  {!formErrors.event_instagram_post && formData.event_instagram_post && (
+                    <p className="text-xs text-muted-foreground">Must be a valid URL starting with http:// or https://</p>
+                  )}
                   {formErrors.event_instagram_post && (
-                    <p className="text-sm text-red-500">{formErrors.event_instagram_post}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.event_instagram_post}</p>
                   )}
                 </div>
               </div>
