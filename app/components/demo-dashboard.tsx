@@ -546,7 +546,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                 )}
               </div>
               {displayStatus === "rejected" && (
-                <p className="text-xs text-red-600 dark:text-red-400 italic">Demo will be auto-deleted in 2 days</p>
+                <p className="text-xs text-red-600 dark:text-red-400 italic">Demo will be auto-deleted once a day</p>
               )}
             </div>
           </div>
