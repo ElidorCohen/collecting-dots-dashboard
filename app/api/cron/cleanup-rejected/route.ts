@@ -6,6 +6,7 @@ import { invalidateDemosCache } from '@/app/api/demos/route'
 const REJECTED_FOLDER_PATH = '/demos/rejected'
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000
 const MAX_ERROR_DETAILS = 20
+const MAX_DEBUG_FILE_LOGS = 30
 
 function isAuthorizedCronRequest(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
   let scanned = 0
   let deleted = 0
   let failed = 0
+  let missingServerModified = 0
   const errors: Array<{ path: string; message: string }> = []
 
   try {
@@ -51,10 +53,47 @@ export async function GET(request: NextRequest) {
       (entry): entry is files.FileMetadataReference => entry['.tag'] === 'file'
     )
     scanned = fileEntries.length
+    const fileDiagnostics = fileEntries.map((fileEntry) => {
+      const serverModifiedIso = fileEntry.server_modified || null
+      const serverModifiedTs = serverModifiedIso ? new Date(serverModifiedIso).getTime() : null
+      const ageHours = serverModifiedTs ? Number(((now - serverModifiedTs) / (60 * 60 * 1000)).toFixed(2)) : null
+      const stale = serverModifiedTs !== null && serverModifiedTs <= staleThreshold
 
+      if (!serverModifiedIso) {
+        missingServerModified += 1
+      }
+
+      return {
+        name: fileEntry.name,
+        path: fileEntry.path_display || fileEntry.path_lower || fileEntry.name,
+        server_modified: serverModifiedIso,
+        client_modified: fileEntry.client_modified || null,
+        age_hours_from_server_modified: ageHours,
+        stale,
+      }
+    })
     const staleFiles = fileEntries.filter((fileEntry) => {
       if (!fileEntry.server_modified) return false
       return new Date(fileEntry.server_modified).getTime() <= staleThreshold
+    })
+
+    const staleAgeHours = fileDiagnostics
+      .map((item) => item.age_hours_from_server_modified)
+      .filter((value): value is number => value !== null)
+    const oldestAgeHours = staleAgeHours.length ? Math.max(...staleAgeHours) : null
+    const youngestAgeHours = staleAgeHours.length ? Math.min(...staleAgeHours) : null
+
+    console.log('Dropbox rejected cleanup file diagnostics:', {
+      folder: REJECTED_FOLDER_PATH,
+      now_iso: new Date(now).toISOString(),
+      threshold_iso: new Date(staleThreshold).toISOString(),
+      scanned,
+      missing_server_modified: missingServerModified,
+      oldest_age_hours: oldestAgeHours,
+      youngest_age_hours: youngestAgeHours,
+      files_logged: Math.min(fileDiagnostics.length, MAX_DEBUG_FILE_LOGS),
+      files: fileDiagnostics.slice(0, MAX_DEBUG_FILE_LOGS),
+      files_truncated: fileDiagnostics.length > MAX_DEBUG_FILE_LOGS,
     })
 
     for (const fileEntry of staleFiles) {
@@ -93,6 +132,7 @@ export async function GET(request: NextRequest) {
       stale_candidates: staleFiles.length,
       deleted,
       failed,
+      missing_server_modified: missingServerModified,
       threshold_iso: new Date(staleThreshold).toISOString(),
       errors,
     }
