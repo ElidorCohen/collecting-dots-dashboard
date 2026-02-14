@@ -39,26 +39,26 @@ async function findDemoInFolder(
     const response = await dbx.filesListFolder({ path: folderPath })
     const files = response.result.entries
 
-    // Look for mp3 file that matches the demo_id pattern
-    const mp3File = files.find(file =>
+    // Look for supported audio file that matches the demo_id pattern
+    const audioFile = files.find(file =>
       file['.tag'] === 'file' &&
-      file.name.endsWith('.mp3') &&
+      (file.name.toLowerCase().endsWith('.mp3') || file.name.toLowerCase().endsWith('.wav')) &&
       file.name.includes(demoId)
     )
 
-    if (!mp3File) {
+    if (!audioFile) {
       return null
     }
 
     // Find corresponding metadata file
-    const metadataFileName = `${mp3File.name}.metadata.json`
+    const metadataFileName = `${audioFile.name}.metadata.json`
     const metadataFile = files.find(file => file.name === metadataFileName)
 
     if (!metadataFile) {
       return null
     }
 
-    return { mp3File, metadataFile }
+    return { mp3File: audioFile, metadataFile }
   } catch (error) {
     console.error(`Error searching folder ${folderPath}:`, error)
     return null

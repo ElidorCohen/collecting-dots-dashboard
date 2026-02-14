@@ -24,13 +24,13 @@ const EMAIL_CONFIG = {
   
   // Liked email content
   liked: {
-    subject: (trackTitle: string) => `Your Demo Has Caught Our Attention - ${trackTitle}`,
-    heading: '🎵 Your Demo Has Caught Our Attention!',
+    subject: (trackTitle: string) => `Hold! Your Demo Has Caught Our Attention - ${trackTitle}`,
+    heading: '🎵 Hold! Your Demo Has Caught Our Attention!',
     intro: (artistName: string, trackTitle: string) => 
       `Dear ${artistName}, we wanted to reach out and let you know that your demo "<strong>${trackTitle}</strong>" has caught the attention of our A&R team.`,
     body: `Your track has been forwarded for further review, which means it stood out among the many submissions we receive. This is an exciting step in our review process!`,
-    nextSteps: `Our team is currently evaluating your submission more closely. If your track aligns with our upcoming release schedule and vision, we'll be in touch with next steps.`,
-    closing: 'Keep creating amazing music!',
+    nextSteps: `Our team is currently evaluating your submission more closely. If your track aligns with our upcoming release schedule and vision, we'll be in touch with next steps. `,
+    closing: 'WHILE YOU AWAIT OUR RESPONSE, PLEASE KEEP THE TRACK ON HOLD<br><br>Keep creating amazing music!',
   },
   
   // Rejected email content
@@ -47,8 +47,8 @@ const EMAIL_CONFIG = {
   
   // Final approval email content
   approved: {
-    subject: (trackTitle: string) => `Congratulations! Your Demo Has Been Selected - ${trackTitle}`,
-    heading: '🎉 Congratulations! Your Demo Has Been Selected!',
+    subject: (artistName: string) => `${artistName} x Collecting Dots`,
+    heading: (trackTitle: string) => `Your demo ${trackTitle} has been selected!`,
     intro: (artistName: string, trackTitle: string) => 
       `Dear ${artistName}, we are thrilled to inform you that your demo "<strong>${trackTitle}</strong>" has been officially selected by our label!`,
     body: `This is a significant milestone, and we're excited about the possibility of working together. Your track resonated with our team and we believe it could be a great addition to our catalog.`,
@@ -126,7 +126,7 @@ ${config.body}
 What Happens Next?
 ${config.nextSteps}
 
-${config.closing}
+${config.closing.replace(/<[^>]*>/g, '').replace(/<br\s*\/?>/gi, '\n')}
 
 Best regards,
 ${labelName} Team
@@ -221,7 +221,7 @@ export function getDemoApprovedEmail(
   const config = EMAIL_CONFIG.approved;
   const labelName = EMAIL_CONFIG.labelName;
   
-  const subject = config.subject(trackTitle);
+  const subject = config.subject(artistName);
   
   const nextStepsHtml = config.nextSteps.map(step => `<li>${step}</li>`).join('\n');
   const nextStepsText = config.nextSteps.map(step => `• ${step}`).join('\n');
@@ -234,7 +234,7 @@ export function getDemoApprovedEmail(
         <h1>${labelName}</h1>
       </div>
       <div class="content">
-        <h2>${config.heading}</h2>
+        <h2>${config.heading(trackTitle)}</h2>
         <p>${config.intro(artistName, trackTitle)}</p>
         <div class="track-info">
           <h3>📀 Track Details</h3>
@@ -261,7 +261,7 @@ export function getDemoApprovedEmail(
   const textBody = `
 ${labelName}
 
-${config.heading}
+${config.heading(trackTitle)}
 
 ${config.intro(artistName, trackTitle).replace(/<[^>]*>/g, '')}
 

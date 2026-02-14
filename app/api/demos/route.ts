@@ -17,7 +17,10 @@ interface DemoCache {
   demos: Demo[]
   folderHashes: Record<string, string> // folder path -> hash of contents
   timestamp: number
+  version?: number
 }
+
+const DEMOS_CACHE_VERSION = 2
 
 /**
  * Invalidate the demos cache (called when demos are moved between folders)
@@ -198,21 +201,23 @@ async function fetchDemosFromFolder(
     const response = await dbx.filesListFolder({ path: folderPath })
     const files = response.result.entries
 
-    // Separate .mp3 files and .metadata.json files
-    const mp3Files = files.filter(file =>
-      file['.tag'] === 'file' && file.name.endsWith('.mp3')
-    )
+    // Separate supported audio files (.mp3/.wav) and .metadata.json files
+    const audioFiles = files.filter(file => {
+      if (file['.tag'] !== 'file') return false
+      const lowerName = file.name.toLowerCase()
+      return lowerName.endsWith('.mp3') || lowerName.endsWith('.wav')
+    })
 
     const demos: Demo[] = []
 
-    // Process each mp3 file
-    for (const mp3File of mp3Files) {
-      // Metadata file naming: "trackname.mp3.metadata.json" (not "trackname.metadata.json")
-      const metadataFileName = `${mp3File.name}.metadata.json`
+    // Process each supported audio file
+    for (const audioFile of audioFiles) {
+      // Metadata file naming: "trackname.mp3.metadata.json" or "trackname.wav.metadata.json"
+      const metadataFileName = `${audioFile.name}.metadata.json`
       const metadataFile = files.find(file => file.name === metadataFileName)
 
       if (!metadataFile || metadataFile['.tag'] !== 'file') {
-        console.warn(`Metadata file not found for ${mp3File.name}`)
+        console.warn(`Metadata file not found for ${audioFile.name}`)
         continue
       }
 
@@ -251,12 +256,12 @@ async function fetchDemosFromFolder(
         }
 
         // Store the file path for later link generation
-        ;(demo as any)._filePath = `${folderPath}/${mp3File.name}`
+        ;(demo as any)._filePath = `${folderPath}/${audioFile.name}`
         ;(demo as any)._sortTimestamp = metadata.submitted_at
 
         demos.push(demo)
       } catch (error) {
-        console.error(`Error processing demo ${mp3File.name}:`, error)
+        console.error(`Error processing demo ${audioFile.name}:`, error)
       }
     }
 
@@ -363,7 +368,8 @@ export async function GET(request: NextRequest) {
 
     // Check if cache is still valid (15 minutes in milliseconds)
     const CACHE_DURATION = 15 * 60 * 1000
-    const cacheExpired = !demosCache || (Date.now() - demosCache.timestamp > CACHE_DURATION)
+    const cacheVersionMismatch = !demosCache || demosCache.version !== DEMOS_CACHE_VERSION
+    const cacheExpired = !demosCache || (Date.now() - demosCache.timestamp > CACHE_DURATION) || cacheVersionMismatch
 
     // Use cache if available and valid
     if (demosCache && !foldersChanged && !cacheExpired) {
@@ -442,7 +448,8 @@ export async function GET(request: NextRequest) {
     const newCache: DemoCache = {
       demos: allDemos,
       folderHashes: currentFolderHashes,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      version: DEMOS_CACHE_VERSION,
     }
     await redis.set(CACHE_KEYS.DEMOS, newCache, { ex: CACHE_TTL.DEMOS })
 
