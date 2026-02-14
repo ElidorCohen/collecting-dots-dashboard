@@ -39,7 +39,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Settings",
       href: `/dashboard/settings`,
       icon: Settings,
-      disabled: true, // Placeholder for future implementation
     },
   ]
 

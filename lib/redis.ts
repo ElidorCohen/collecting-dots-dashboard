@@ -40,6 +40,7 @@ export const redis = {
 export const CACHE_KEYS = {
   DEMOS: 'demos:cache',
   DROPBOX_TOKEN: 'dropbox:access_token',
+  SETTINGS_DEMO_SUBMISSION_ENABLED: 'settings:demo_submission_enabled',
 } as const
 
 /**
