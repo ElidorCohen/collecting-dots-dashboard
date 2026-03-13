@@ -17,7 +17,7 @@ export class EmailService {
   private accessToken: string | null;
 
   constructor() {
-    this.senderEmail = 'office@collectingdots.com';
+    this.senderEmail = 'demos@collectingdots.com';
     this.labelName = 'Collecting Dots Records';
     this.clientId = process.env.GMAIL_CLIENT_ID || '';
     this.clientSecret = process.env.GMAIL_CLIENT_SECRET || '';
