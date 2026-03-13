@@ -29,6 +29,7 @@ const statusConfig = {
 
 export default function DemoDashboard({ status }: DemoDashboardProps) {
   const [demos, setDemos] = useState<Demo[]>([])
+  const [allDemos, setAllDemos] = useState<Demo[]>([]) // Store all demos for accurate counts
   const { currentRole: currentUser } = useRole()
   const [statusFilter, setStatusFilter] = useState<string>(status)
   
@@ -65,7 +66,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
       let filteredDemos = apiResponse.demos;
       console.log('All demos before filtering:', filteredDemos);
       
-      // Apply status filter first
+      // Apply status filter
       if (statusFilter && statusFilter !== 'all') {
         // Map filter values to actual backend status values
         const statusMapping: { [key: string]: string[] } = {
@@ -73,7 +74,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
           'liked': ['assistant_liked'], // Map to actual backend status
           'assistant_liked': ['assistant_liked'],
           'rejected_by_assistant': ['rejected'], // Map to actual backend status
-          'rejected': ['rejected'],
+          'rejected': ['rejected', 'rejected_by_assistant', 'rejected_by_admin'], // Include all rejected statuses
           'approved': ['approved'],
           'rejected_by_admin': ['rejected_by_admin'],
           'owner_liked': ['owner_liked']
@@ -84,8 +85,14 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
           allowedStatuses.includes(demo.status)
         );
         console.log(`Demos after status filter (${statusFilter}):`, filteredDemos);
+      } else {
+        // When "All Statuses" is selected, exclude rejected demos
+        const rejectedStatuses = ['rejected', 'rejected_by_assistant', 'rejected_by_admin'];
+        filteredDemos = filteredDemos.filter((demo: Demo) => 
+          !rejectedStatuses.includes(demo.status)
+        );
+        console.log('Demos after excluding rejected (All Statuses):', filteredDemos);
       }
-      // When "All Statuses" is selected, show ALL demos without any filtering
       
       // Sort demos by date (newest first) - this happens after filtering
       console.log('=== SORTING DEBUG START ===');
@@ -169,6 +176,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
       
       console.log('Final filtered and sorted demos:', filteredDemos);
       setDemos(filteredDemos);
+      setAllDemos(apiResponse.demos); // Store all demos for count calculations
       
       // Restore scroll position if we need to preserve it
       if (shouldPreserveScroll.current) {
@@ -472,9 +480,8 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
     setConfirmDialog(null)
   }
 
-  // Calculate counts from current demos
+  // Calculate counts from all demos (not filtered) for accurate counts
   const getCounts = () => {
-    const allDemos = demos; // In a real app, you'd want all demos for accurate counts
     return {
       submitted: allDemos.filter(d => d.status === 'submitted').length,
       liked: allDemos.filter(d => d.status === 'assistant_liked' || d.status === 'liked').length,
