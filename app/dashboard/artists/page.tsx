@@ -18,22 +18,22 @@ import {
   ConfirmationDialog,
 } from '@/components/ui/confirmation-dialog'
 import { Users, Plus, Trash2, Edit2, Instagram, Music, ExternalLink, Loader2 } from 'lucide-react'
-
-interface Artist {
-  artist_name: string
-  artist_instagram_username: string
-  artist_soundcloud: string
-  artist_spotify: string
-  artist_beatport: string
-}
+import { normalizeArtist, validateArtist, type Artist } from '@/lib/artist-fields'
 
 interface ArtistsData {
   artists: Artist[]
 }
 
+// The server's own message says what went wrong; fall back to the status when there is none
+const readError = async (response: Response, fallback: string) => {
+  const data = await response.json().catch(() => null)
+  return data?.error || `${fallback} (${response.status})`
+}
+
 export default function ArtistsPage() {
   const [artists, setArtists] = useState<Artist[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -57,14 +57,16 @@ export default function ArtistsPage() {
   const fetchArtists = async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const response = await fetch('/api/artists')
       if (!response.ok) {
-        throw new Error('Failed to fetch artists')
+        throw new Error(await readError(response, 'Failed to fetch artists'))
       }
       const data: ArtistsData = await response.json()
       setArtists(data.artists || [])
     } catch (error) {
       console.error('Error fetching artists:', error)
+      setLoadError(error instanceof Error ? error.message : 'Failed to fetch artists')
     } finally {
       setLoading(false)
     }
@@ -83,60 +85,8 @@ export default function ArtistsPage() {
   }
 
   const validateForm = (): boolean => {
-    const errors: Record<string, string> = {}
-
-    if (!formData.artist_name.trim()) {
-      errors.artist_name = 'Artist name is required'
-    }
-    if (!formData.artist_instagram_username.trim()) {
-      errors.artist_instagram_username = 'Instagram username is required'
-    }
-    if (!formData.artist_soundcloud.trim()) {
-      errors.artist_soundcloud = 'SoundCloud URL is required'
-    } else {
-      // Validate SoundCloud URL
-      try {
-        const url = new URL(formData.artist_soundcloud.trim())
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          errors.artist_soundcloud = 'URL must start with http:// or https://'
-        } else if (!url.hostname.includes('soundcloud.com')) {
-          errors.artist_soundcloud = 'Must be a SoundCloud URL (soundcloud.com)'
-        }
-      } catch {
-        errors.artist_soundcloud = 'Please enter a valid SoundCloud URL'
-      }
-    }
-    if (!formData.artist_spotify.trim()) {
-      errors.artist_spotify = 'Spotify URL is required'
-    } else {
-      // Validate Spotify URL
-      try {
-        const url = new URL(formData.artist_spotify.trim())
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          errors.artist_spotify = 'URL must start with http:// or https://'
-        } else if (!url.hostname.includes('spotify.com')) {
-          errors.artist_spotify = 'Must be a Spotify URL (spotify.com)'
-        }
-      } catch {
-        errors.artist_spotify = 'Please enter a valid Spotify URL'
-      }
-    }
-    if (!formData.artist_beatport.trim()) {
-      errors.artist_beatport = 'Beatport URL is required'
-    } else {
-      // Validate Beatport URL
-      try {
-        const url = new URL(formData.artist_beatport.trim())
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          errors.artist_beatport = 'URL must start with http:// or https://'
-        } else if (!url.hostname.includes('beatport.com')) {
-          errors.artist_beatport = 'Must be a Beatport URL (beatport.com)'
-        }
-      } catch {
-        errors.artist_beatport = 'Please enter a valid Beatport URL'
-      }
-    }
-
+    // The same rules the API applies, so the form never sends what the server would reject
+    const errors = validateArtist(normalizeArtist(formData)) as Record<string, string>
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -160,11 +110,11 @@ export default function ArtistsPage() {
     setIsEditing(true)
     setEditingIndex(index)
     setFormData({
-      artist_name: artist.artist_name,
-      artist_instagram_username: artist.artist_instagram_username,
-      artist_soundcloud: artist.artist_soundcloud,
-      artist_spotify: artist.artist_spotify,
-      artist_beatport: artist.artist_beatport,
+      artist_name: artist.artist_name || '',
+      artist_instagram_username: artist.artist_instagram_username || '',
+      artist_soundcloud: artist.artist_soundcloud || '',
+      artist_spotify: artist.artist_spotify || '',
+      artist_beatport: artist.artist_beatport || '',
     })
     setFormErrors({})
     setIsDialogOpen(true)
@@ -203,13 +153,12 @@ export default function ArtistsPage() {
           },
           body: JSON.stringify({
             index: editingIndex,
-            ...formData,
+            ...normalizeArtist(formData),
           }),
         })
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to update artist')
+          throw new Error(await readError(response, 'Failed to update artist'))
         }
       } else {
         // Add new artist
@@ -218,12 +167,11 @@ export default function ArtistsPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(normalizeArtist(formData)),
         })
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to add artist')
+          throw new Error(await readError(response, 'Failed to add artist'))
         }
       }
 
@@ -253,7 +201,7 @@ export default function ArtistsPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete artist')
+        throw new Error(await readError(response, 'Failed to delete artist'))
       }
 
       setIsDeleting(false)
@@ -263,7 +211,7 @@ export default function ArtistsPage() {
       await fetchArtists()
     } catch (error) {
       console.error('Error deleting artist:', error)
-      alert('Failed to delete artist')
+      alert(error instanceof Error ? error.message : 'Failed to delete artist')
       setIsDeleting(false)
       setDeleteIndex(null)
     }
@@ -299,8 +247,20 @@ export default function ArtistsPage() {
           </Card>
         )}
 
+        {/* Error State */}
+        {!loading && loadError && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-foreground mb-2">Artists could not be loaded</h2>
+              <p className="text-muted-foreground mb-4">{loadError}</p>
+              <Button onClick={fetchArtists}>Try again</Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Empty State */}
-        {!loading && artists.length === 0 && (
+        {!loading && !loadError && artists.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
               <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -328,6 +288,7 @@ export default function ArtistsPage() {
                         {artist.artist_name}
                       </h3>
                       <div className="space-y-2">
+                        {artist.artist_instagram_username && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Instagram className="w-4 h-4" />
                           <span className="font-medium">Instagram:</span>
@@ -341,6 +302,8 @@ export default function ArtistsPage() {
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
+                        )}
+                        {artist.artist_soundcloud && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Music className="w-4 h-4" />
                           <span className="font-medium">SoundCloud:</span>
@@ -354,6 +317,7 @@ export default function ArtistsPage() {
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
+                        )}
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Music className="w-4 h-4" />
                           <span className="font-medium">Spotify:</span>
@@ -367,6 +331,7 @@ export default function ArtistsPage() {
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
+                        {artist.artist_beatport && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Music className="w-4 h-4" />
                           <span className="font-medium">Beatport:</span>
@@ -380,6 +345,7 @@ export default function ArtistsPage() {
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -413,7 +379,7 @@ export default function ArtistsPage() {
             <DialogHeader>
               <DialogTitle>{isEditing ? 'Edit Artist' : 'Add New Artist'}</DialogTitle>
               <DialogDescription>
-                Fill in all the details for the artist. All fields are required.
+                The artist photo on the website comes from their Spotify profile. Fields marked with (Optional) are not required.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -433,7 +399,7 @@ export default function ArtistsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="artist_instagram_username">Instagram Username</Label>
+                  <Label htmlFor="artist_instagram_username">Instagram Username (Optional)</Label>
                   <Input
                     id="artist_instagram_username"
                     value={formData.artist_instagram_username}
@@ -447,10 +413,11 @@ export default function ArtistsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="artist_soundcloud">SoundCloud URL</Label>
+                  <Label htmlFor="artist_soundcloud">SoundCloud URL (Optional)</Label>
                   <Input
                     id="artist_soundcloud"
-                    type="url"
+                    inputMode="url"
+                    autoCapitalize="none"
                     value={formData.artist_soundcloud}
                     onChange={(e) => handleInputChange('artist_soundcloud', e.target.value)}
                     placeholder="https://soundcloud.com/..."
@@ -468,14 +435,15 @@ export default function ArtistsPage() {
                   <Label htmlFor="artist_spotify">Spotify URL</Label>
                   <Input
                     id="artist_spotify"
-                    type="url"
+                    inputMode="url"
+                    autoCapitalize="none"
                     value={formData.artist_spotify}
                     onChange={(e) => handleInputChange('artist_spotify', e.target.value)}
                     placeholder="https://open.spotify.com/artist/..."
                     className={formErrors.artist_spotify ? 'border-red-500' : ''}
                   />
                   {!formErrors.artist_spotify && formData.artist_spotify && (
-                    <p className="text-xs text-muted-foreground">Must be a valid Spotify URL</p>
+                    <p className="text-xs text-muted-foreground">The artist profile link; the website uses it for the photo</p>
                   )}
                   {formErrors.artist_spotify && (
                     <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_spotify}</p>
@@ -483,10 +451,11 @@ export default function ArtistsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="artist_beatport">Beatport URL</Label>
+                  <Label htmlFor="artist_beatport">Beatport URL (Optional)</Label>
                   <Input
                     id="artist_beatport"
-                    type="url"
+                    inputMode="url"
+                    autoCapitalize="none"
                     value={formData.artist_beatport}
                     onChange={(e) => handleInputChange('artist_beatport', e.target.value)}
                     placeholder="https://www.beatport.com/artist/..."

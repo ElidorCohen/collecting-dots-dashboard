@@ -33,9 +33,32 @@ interface EventsData {
   events: Event[]
 }
 
+// The website reads DD/MM/YYYY; the date picker works in YYYY-MM-DD
+const toPickerDate = (date: string) => {
+  const match = date.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  return match ? `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}` : ''
+}
+const fromPickerDate = (date: string) => {
+  const [year, month, day] = date.split('-')
+  return `${day}/${month}/${year}`
+}
+
+// Links are often pasted without the scheme; the website only shows http(s) links
+const withScheme = (url: string) => {
+  const value = url.trim()
+  return !value || /^https?:\/\//i.test(value) ? value : `https://${value}`
+}
+
+// The server's own message says what went wrong; fall back to the status when there is none
+const readError = async (response: Response, fallback: string) => {
+  const data = await response.json().catch(() => null)
+  return data?.error || `${fallback} (${response.status})`
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -61,14 +84,16 @@ export default function EventsPage() {
   const fetchEvents = async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const response = await fetch('/api/events')
       if (!response.ok) {
-        throw new Error('Failed to fetch events')
+        throw new Error(await readError(response, 'Failed to fetch events'))
       }
       const data: EventsData = await response.json()
       setEvents(data.events || [])
     } catch (error) {
       console.error('Error fetching events:', error)
+      setLoadError(error instanceof Error ? error.message : 'Failed to fetch events')
     } finally {
       setLoading(false)
     }
@@ -95,24 +120,9 @@ export default function EventsPage() {
     if (!formData.location.trim()) {
       errors.location = 'Location is required'
     }
-    if (!formData.date.trim()) {
+    // The date picker only yields complete, real dates
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(formData.date)) {
       errors.date = 'Date is required'
-    } else {
-      // Validate date format: DD/MM/YYYY
-      const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/
-      if (!dateRegex.test(formData.date.trim())) {
-        errors.date = 'Date must be in format DD/MM/YYYY (15/11/2025)'
-      } else {
-        const [, day, month, year] = formData.date.trim().match(dateRegex) || []
-        const dayNum = parseInt(day, 10)
-        const monthNum = parseInt(month, 10)
-        const yearNum = parseInt(year, 10)
-        
-        // Basic validation: day 1-31, month 1-12, year reasonable
-        if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900 || yearNum > 2100) {
-          errors.date = 'Please enter a valid date'
-        }
-      }
     }
     if (!formData.times.trim()) {
       errors.times = 'Times are required'
@@ -124,7 +134,7 @@ export default function EventsPage() {
     // Validate external URL if provided
     if (formData.event_external_url.trim()) {
       try {
-        const url = new URL(formData.event_external_url.trim())
+        const url = new URL(withScheme(formData.event_external_url))
         if (!['http:', 'https:'].includes(url.protocol)) {
           errors.event_external_url = 'URL must start with http:// or https://'
         }
@@ -136,7 +146,7 @@ export default function EventsPage() {
     // Validate Instagram post URL if provided
     if (formData.event_instagram_post.trim()) {
       try {
-        const url = new URL(formData.event_instagram_post.trim())
+        const url = new URL(withScheme(formData.event_instagram_post))
         if (!['http:', 'https:'].includes(url.protocol)) {
           errors.event_instagram_post = 'URL must start with http:// or https://'
         }
@@ -172,7 +182,7 @@ export default function EventsPage() {
     setFormData({
       event_title: event.event_title,
       location: event.location,
-      date: event.date,
+      date: toPickerDate(event.date),
       times: event.times,
       artists: event.artists,
       event_external_url: event.event_external_url || '',
@@ -205,9 +215,16 @@ export default function EventsPage() {
       return
     }
 
+    const event = {
+      ...formData,
+      date: fromPickerDate(formData.date),
+      event_external_url: withScheme(formData.event_external_url),
+      event_instagram_post: withScheme(formData.event_instagram_post),
+    }
+
     try {
       setIsSubmitting(true)
-      
+
       if (isEditing && editingIndex !== null) {
         // Update existing event
         const response = await fetch('/api/events', {
@@ -217,13 +234,12 @@ export default function EventsPage() {
           },
           body: JSON.stringify({
             index: editingIndex,
-            ...formData,
+            ...event,
           }),
         })
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to update event')
+          throw new Error(await readError(response, 'Failed to update event'))
         }
       } else {
         // Add new event
@@ -232,12 +248,11 @@ export default function EventsPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(event),
         })
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to add event')
+          throw new Error(await readError(response, 'Failed to add event'))
         }
       }
 
@@ -267,7 +282,7 @@ export default function EventsPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete event')
+        throw new Error(await readError(response, 'Failed to delete event'))
       }
 
       setIsDeleting(false)
@@ -277,7 +292,7 @@ export default function EventsPage() {
       await fetchEvents()
     } catch (error) {
       console.error('Error deleting event:', error)
-      alert('Failed to delete event')
+      alert(error instanceof Error ? error.message : 'Failed to delete event')
       setIsDeleting(false)
       setDeleteIndex(null)
     }
@@ -313,8 +328,20 @@ export default function EventsPage() {
           </Card>
         )}
 
+        {/* Error State */}
+        {!loading && loadError && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-foreground mb-2">Events could not be loaded</h2>
+              <p className="text-muted-foreground mb-4">{loadError}</p>
+              <Button onClick={fetchEvents}>Try again</Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Empty State */}
-        {!loading && events.length === 0 && (
+        {!loading && !loadError && events.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
               <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -440,12 +467,11 @@ export default function EventsPage() {
                   <Label htmlFor="date">Event Date</Label>
                   <Input
                     id="date"
+                    type="date"
                     value={formData.date}
                     onChange={(e) => handleInputChange('date', e.target.value)}
-                    placeholder="15/11/2025"
                     className={formErrors.date ? 'border-red-500' : ''}
                   />
-                  <p className="text-xs text-muted-foreground">Format: DD/MM/YYYY (15/11/2025)</p>
                   {formErrors.date && (
                     <p className="text-sm text-red-600 dark:text-red-400">{formErrors.date}</p>
                   )}
@@ -499,7 +525,8 @@ export default function EventsPage() {
                   <Label htmlFor="event_external_url">Event External URL (Optional)</Label>
                   <Input
                     id="event_external_url"
-                    type="url"
+                    inputMode="url"
+                    autoCapitalize="none"
                     value={formData.event_external_url}
                     onChange={(e) => handleInputChange('event_external_url', e.target.value)}
                     placeholder="https://example.com/event"
@@ -517,7 +544,8 @@ export default function EventsPage() {
                   <Label htmlFor="event_instagram_post">Event Instagram Post URL (Optional)</Label>
                   <Input
                     id="event_instagram_post"
-                    type="url"
+                    inputMode="url"
+                    autoCapitalize="none"
                     value={formData.event_instagram_post}
                     onChange={(e) => handleInputChange('event_instagram_post', e.target.value)}
                     placeholder="https://www.instagram.com/p/..."

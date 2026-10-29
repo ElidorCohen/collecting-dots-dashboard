@@ -1,73 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getValidAccessToken } from '@/lib/dropbox'
+import { getValidAccessToken, readDropboxJson, writeDropboxJson } from '@/lib/dropbox'
+import { normalizeArtist, spotifyArtistId, validateArtist, type Artist } from '@/lib/artist-fields'
 
 const ARTISTS_FILE_PATH = '/artists/artist_urls.json'
-
-interface Artist {
-  artist_name: string
-  artist_instagram_username: string
-  artist_soundcloud: string
-  artist_spotify: string
-  artist_beatport: string
-}
 
 interface ArtistsData {
   artists: Artist[]
 }
 
 /**
- * Validate SoundCloud URL
+ * Download artist_urls.json; null only when the file does not exist yet
  */
-function validateSoundCloudURL(url: string): { valid: boolean; error?: string } {
-  try {
-    const urlObj = new URL(url.trim())
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
-      return { valid: false, error: 'URL must start with http:// or https://' }
-    }
-    if (!urlObj.hostname.includes('soundcloud.com')) {
-      return { valid: false, error: 'Must be a SoundCloud URL (soundcloud.com)' }
-    }
-    return { valid: true }
-  } catch {
-    return { valid: false, error: 'Please enter a valid SoundCloud URL' }
+async function readArtists(accessToken: string): Promise<ArtistsData | null> {
+  const artistsData = await readDropboxJson<ArtistsData>(accessToken, ARTISTS_FILE_PATH)
+  if (artistsData && !Array.isArray(artistsData.artists)) {
+    throw new Error('artist_urls.json has no artists list')
   }
+  return artistsData
+}
+
+const writeArtists = (accessToken: string, artistsData: ArtistsData) => writeDropboxJson(accessToken, ARTISTS_FILE_PATH, artistsData)
+
+/**
+ * Normalize and validate a request body; returns the artist and the first error message, if any
+ */
+function parseArtist(body: Record<string, unknown>): { artist: Artist; error?: string } {
+  const artist = normalizeArtist(body)
+  const [error] = Object.values(validateArtist(artist))
+  return { artist, error }
 }
 
 /**
- * Validate Spotify URL
+ * The website lists each Spotify artist once, so a second entry would never appear
  */
-function validateSpotifyURL(url: string): { valid: boolean; error?: string } {
-  try {
-    const urlObj = new URL(url.trim())
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
-      return { valid: false, error: 'URL must start with http:// or https://' }
-    }
-    if (!urlObj.hostname.includes('spotify.com')) {
-      return { valid: false, error: 'Must be a Spotify URL (spotify.com)' }
-    }
-    return { valid: true }
-  } catch {
-    return { valid: false, error: 'Please enter a valid Spotify URL' }
-  }
+function duplicateOf(artists: Artist[], artist: Artist, skipIndex = -1) {
+  const id = spotifyArtistId(artist.artist_spotify)
+  return artists.find((other, i) => i !== skipIndex && spotifyArtistId(other.artist_spotify || '') === id)
 }
 
-/**
- * Validate Beatport URL
- */
-function validateBeatportURL(url: string): { valid: boolean; error?: string } {
-  try {
-    const urlObj = new URL(url.trim())
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
-      return { valid: false, error: 'URL must start with http:// or https://' }
-    }
-    if (!urlObj.hostname.includes('beatport.com')) {
-      return { valid: false, error: 'Must be a Beatport URL (beatport.com)' }
-    }
-    return { valid: true }
-  } catch {
-    return { valid: false, error: 'Please enter a valid Beatport URL' }
-  }
-}
+const reason = (error: unknown) => error instanceof Error ? error.message : String(error)
 
 /**
  * GET /api/artists - Fetch all artists from Dropbox
@@ -75,32 +46,13 @@ function validateBeatportURL(url: string): { valid: boolean; error?: string } {
 export async function GET() {
   try {
     const accessToken = await getValidAccessToken()
+    const artistsData = await readArtists(accessToken)
 
-    // Download artist_urls.json from Dropbox
-    const downloadResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Dropbox-API-Arg': JSON.stringify({ path: ARTISTS_FILE_PATH }),
-      },
-    })
-
-    if (!downloadResponse.ok) {
-      if (downloadResponse.status === 409) {
-        // File doesn't exist, return empty artists array
-        return NextResponse.json({ artists: [] })
-      }
-      throw new Error(`Failed to download artist_urls.json: ${downloadResponse.status}`)
-    }
-
-    const artistsText = await downloadResponse.text()
-    const artistsData: ArtistsData = JSON.parse(artistsText)
-
-    return NextResponse.json(artistsData)
+    return NextResponse.json(artistsData ?? { artists: [] })
   } catch (error) {
     console.error('Error fetching artists:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch artists' },
+      { error: `Failed to fetch artists: ${reason(error)}` },
       { status: 500 }
     )
   }
@@ -111,89 +63,34 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { artist_name, artist_instagram_username, artist_soundcloud, artist_spotify, artist_beatport } = body
-
-    // Validate required fields
-    if (!artist_name || !artist_instagram_username || !artist_soundcloud || !artist_spotify || !artist_beatport) {
+    const { artist: newArtist, error } = parseArtist(await request.json())
+    if (error) {
       return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate that fields are not just whitespace
-    if (
-      artist_name.trim().length === 0 ||
-      artist_instagram_username.trim().length === 0 ||
-      artist_soundcloud.trim().length === 0 ||
-      artist_spotify.trim().length === 0 ||
-      artist_beatport.trim().length === 0
-    ) {
-      return NextResponse.json(
-        { error: 'All fields must contain actual text' },
+        { error },
         { status: 400 }
       )
     }
 
     const accessToken = await getValidAccessToken()
 
-    // First, get existing artists
-    let existingArtists: Artist[] = []
-    try {
-      const downloadResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Dropbox-API-Arg': JSON.stringify({ path: ARTISTS_FILE_PATH }),
-        },
-      })
+    // A failed read must stop here: writing anyway would replace every artist with this one
+    const existingArtists = (await readArtists(accessToken))?.artists ?? []
 
-      if (downloadResponse.ok) {
-        const artistsText = await downloadResponse.text()
-        const artistsData: ArtistsData = JSON.parse(artistsText)
-        existingArtists = artistsData.artists || []
-      }
-    } catch (error) {
-      console.log('Artists file does not exist or is empty, starting fresh')
+    const duplicate = duplicateOf(existingArtists, newArtist)
+    if (duplicate) {
+      return NextResponse.json(
+        { error: `This Spotify artist is already listed as "${duplicate.artist_name}"` },
+        { status: 400 }
+      )
     }
 
-    // Add new artist
-    const newArtist: Artist = {
-      artist_name: artist_name.trim(),
-      artist_instagram_username: artist_instagram_username.trim(),
-      artist_soundcloud: artist_soundcloud.trim(),
-      artist_spotify: artist_spotify.trim(),
-      artist_beatport: artist_beatport.trim(),
-    }
-
-    const updatedArtists: ArtistsData = {
-      artists: [...existingArtists, newArtist],
-    }
-
-    // Upload updated artist_urls.json to Dropbox
-    const uploadResponse = await fetch('https://content.dropboxapi.com/2/files/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify({
-          path: ARTISTS_FILE_PATH,
-          mode: 'overwrite',
-        }),
-      },
-      body: JSON.stringify(updatedArtists, null, 2),
-    })
-
-    if (!uploadResponse.ok) {
-      throw new Error(`Failed to upload artist_urls.json: ${uploadResponse.status}`)
-    }
+    await writeArtists(accessToken, { artists: [...existingArtists, newArtist] })
 
     return NextResponse.json({ success: true, artist: newArtist })
   } catch (error) {
     console.error('Error adding artist:', error)
     return NextResponse.json(
-      { error: 'Failed to add artist' },
+      { error: `Failed to add artist: ${reason(error)}` },
       { status: 500 }
     )
   }
@@ -205,7 +102,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { index, artist_name, artist_instagram_username, artist_soundcloud, artist_spotify, artist_beatport } = body
+    const { index } = body
 
     if (index === undefined || index === null) {
       return NextResponse.json(
@@ -222,75 +119,23 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Validate required fields
-    if (!artist_name || !artist_instagram_username || !artist_soundcloud || !artist_spotify || !artist_beatport) {
+    const { artist: updatedArtist, error } = parseArtist(body)
+    if (error) {
       return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate that fields are not just whitespace
-    if (
-      artist_name.trim().length === 0 ||
-      artist_instagram_username.trim().length === 0 ||
-      artist_soundcloud.trim().length === 0 ||
-      artist_spotify.trim().length === 0 ||
-      artist_beatport.trim().length === 0
-    ) {
-      return NextResponse.json(
-        { error: 'All fields must contain actual text' },
-        { status: 400 }
-      )
-    }
-
-    // Validate SoundCloud URL
-    const soundcloudValidation = validateSoundCloudURL(artist_soundcloud)
-    if (!soundcloudValidation.valid) {
-      return NextResponse.json(
-        { error: `SoundCloud URL: ${soundcloudValidation.error}` },
-        { status: 400 }
-      )
-    }
-
-    // Validate Spotify URL
-    const spotifyValidation = validateSpotifyURL(artist_spotify)
-    if (!spotifyValidation.valid) {
-      return NextResponse.json(
-        { error: `Spotify URL: ${spotifyValidation.error}` },
-        { status: 400 }
-      )
-    }
-
-    // Validate Beatport URL
-    const beatportValidation = validateBeatportURL(artist_beatport)
-    if (!beatportValidation.valid) {
-      return NextResponse.json(
-        { error: `Beatport URL: ${beatportValidation.error}` },
+        { error },
         { status: 400 }
       )
     }
 
     const accessToken = await getValidAccessToken()
 
-    // Download existing artists
-    const downloadResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Dropbox-API-Arg': JSON.stringify({ path: ARTISTS_FILE_PATH }),
-      },
-    })
-
-    if (!downloadResponse.ok) {
+    const artistsData = await readArtists(accessToken)
+    if (!artistsData) {
       return NextResponse.json(
         { error: 'Artists file not found' },
         { status: 404 }
       )
     }
-
-    const artistsText = await downloadResponse.text()
-    const artistsData: ArtistsData = JSON.parse(artistsText)
 
     // Validate index
     if (artistIndex >= artistsData.artists.length) {
@@ -300,44 +145,25 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Update artist at index
-    const updatedArtist: Artist = {
-      artist_name: artist_name.trim(),
-      artist_instagram_username: artist_instagram_username.trim(),
-      artist_soundcloud: artist_soundcloud.trim(),
-      artist_spotify: artist_spotify.trim(),
-      artist_beatport: artist_beatport.trim(),
+    const duplicate = duplicateOf(artistsData.artists, updatedArtist, artistIndex)
+    if (duplicate) {
+      return NextResponse.json(
+        { error: `This Spotify artist is already listed as "${duplicate.artist_name}"` },
+        { status: 400 }
+      )
     }
 
-    const updatedArtists: ArtistsData = {
-      artists: artistsData.artists.map((artist, i) => 
+    await writeArtists(accessToken, {
+      artists: artistsData.artists.map((artist, i) =>
         i === artistIndex ? updatedArtist : artist
       ),
-    }
-
-    // Upload updated artist_urls.json to Dropbox
-    const uploadResponse = await fetch('https://content.dropboxapi.com/2/files/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify({
-          path: ARTISTS_FILE_PATH,
-          mode: 'overwrite',
-        }),
-      },
-      body: JSON.stringify(updatedArtists, null, 2),
     })
-
-    if (!uploadResponse.ok) {
-      throw new Error(`Failed to upload artist_urls.json: ${uploadResponse.status}`)
-    }
 
     return NextResponse.json({ success: true, artist: updatedArtist })
   } catch (error) {
     console.error('Error updating artist:', error)
     return NextResponse.json(
-      { error: 'Failed to update artist' },
+      { error: `Failed to update artist: ${reason(error)}` },
       { status: 500 }
     )
   }
@@ -368,24 +194,13 @@ export async function DELETE(request: NextRequest) {
 
     const accessToken = await getValidAccessToken()
 
-    // Download existing artists
-    const downloadResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Dropbox-API-Arg': JSON.stringify({ path: ARTISTS_FILE_PATH }),
-      },
-    })
-
-    if (!downloadResponse.ok) {
+    const artistsData = await readArtists(accessToken)
+    if (!artistsData) {
       return NextResponse.json(
         { error: 'Artists file not found' },
         { status: 404 }
       )
     }
-
-    const artistsText = await downloadResponse.text()
-    const artistsData: ArtistsData = JSON.parse(artistsText)
 
     // Validate index
     if (artistIndex >= artistsData.artists.length) {
@@ -395,36 +210,16 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Remove artist at index
-    const updatedArtists: ArtistsData = {
+    await writeArtists(accessToken, {
       artists: artistsData.artists.filter((_, i) => i !== artistIndex),
-    }
-
-    // Upload updated artist_urls.json to Dropbox
-    const uploadResponse = await fetch('https://content.dropboxapi.com/2/files/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify({
-          path: ARTISTS_FILE_PATH,
-          mode: 'overwrite',
-        }),
-      },
-      body: JSON.stringify(updatedArtists, null, 2),
     })
-
-    if (!uploadResponse.ok) {
-      throw new Error(`Failed to upload artist_urls.json: ${uploadResponse.status}`)
-    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting artist:', error)
     return NextResponse.json(
-      { error: 'Failed to delete artist' },
+      { error: `Failed to delete artist: ${reason(error)}` },
       { status: 500 }
     )
   }
 }
-

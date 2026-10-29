@@ -18,6 +18,10 @@ export default clerkMiddleware(async (auth, req) => {
 
   // If it's a protected route and user is not signed in, redirect to sign-in
   if (!userId) {
+    // A redirected fetch would read the sign-in page as a success, so API calls get a plain 401
+    if (req.nextUrl.pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Your session has expired. Please sign in again.' }, { status: 401 });
+    }
     return NextResponse.redirect(new URL('/sign-in', req.url));
   }
 
