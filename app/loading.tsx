@@ -3,14 +3,14 @@ import { Card, CardContent } from '@/components/ui/card'
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6">
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-5xl p-4 sm:p-6">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Demo Submission Dashboard</h1>
+            <h1 className="font-display text-3xl text-foreground">Demo Submission Dashboard</h1>
             <div className="flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm text-gray-600">Loading...</span>
+              <span className="text-sm text-muted-foreground">Loading...</span>
             </div>
           </div>
 
@@ -19,8 +19,8 @@ export default function Loading() {
             {Array.from({ length: 5 }).map((_, i) => (
               <Card key={i}>
                 <CardContent className="p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2 animate-pulse" />
-                  <div className="h-8 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 bg-muted rounded mb-2 animate-pulse" />
+                  <div className="h-8 bg-muted rounded animate-pulse" />
                 </CardContent>
               </Card>
             ))}
@@ -34,17 +34,17 @@ export default function Loading() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="h-6 bg-gray-200 rounded mb-2 animate-pulse" />
-                    <div className="h-4 bg-gray-200 rounded mb-2 w-2/3 animate-pulse" />
-                    <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
+                    <div className="h-6 bg-muted rounded mb-2 animate-pulse" />
+                    <div className="h-4 bg-muted rounded mb-2 w-2/3 animate-pulse" />
+                    <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />
                   </div>
-                  <div className="h-6 bg-gray-200 rounded w-24 animate-pulse" />
+                  <div className="h-6 bg-muted rounded w-24 animate-pulse" />
                 </div>
                 <div className="flex gap-2 mb-4">
-                  <div className="h-8 bg-gray-200 rounded w-16 animate-pulse" />
-                  <div className="h-8 bg-gray-200 rounded w-16 animate-pulse" />
+                  <div className="h-8 bg-muted rounded w-16 animate-pulse" />
+                  <div className="h-8 bg-muted rounded w-16 animate-pulse" />
                 </div>
-                <div className="h-10 bg-gray-200 rounded animate-pulse" />
+                <div className="h-10 bg-muted rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}

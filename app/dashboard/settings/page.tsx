@@ -69,7 +69,7 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+          <h1 className="font-display text-3xl text-foreground sm:text-4xl">Settings</h1>
           <p className="text-muted-foreground mt-1">Configure dashboard and site behavior</p>
         </div>
 
@@ -88,19 +88,20 @@ export default function SettingsPage() {
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
-                  <div>
-                    <p className="font-medium text-foreground">
+                <div className="flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 font-medium text-foreground">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${enabled ? "bg-positive" : "bg-destructive"}`} aria-hidden="true" />
                       Demo submissions are currently {enabled ? "enabled" : "disabled"}.
                     </p>
                     {!enabled && (
                       <p className="text-sm text-muted-foreground mt-1">{UNAVAILABLE_MESSAGE}</p>
                     )}
                   </div>
-                  <Button onClick={handleToggle} disabled={isSaving} variant={enabled ? "destructive" : "default"}>
+                  <Button onClick={handleToggle} disabled={isSaving} variant={enabled ? "negative" : "default"}>
                     {isSaving ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="animate-spin" />
                         Saving...
                       </>
                     ) : enabled ? (
@@ -111,7 +112,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
 
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                {error && <p className="text-sm text-destructive">{error}</p>}
               </>
             )}
           </CardContent>

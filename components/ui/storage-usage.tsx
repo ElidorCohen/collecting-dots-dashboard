@@ -57,7 +57,7 @@ export function StorageUsage({ collapsed = false }: { collapsed?: boolean }) {
         <div
           className={cn(
             "h-full rounded-full transition-[width]",
-            percent >= 95 ? "bg-red-500" : percent >= 80 ? "bg-amber-500" : "bg-primary"
+            percent >= 95 ? "bg-destructive" : percent >= 80 ? "bg-caution" : "bg-primary"
           )}
           style={{ width: `${percent}%` }}
         />

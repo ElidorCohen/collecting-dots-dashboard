@@ -16,15 +16,20 @@ interface DemoDashboardProps {
   status: string;
 }
 
+const NEUTRAL = "border-transparent bg-muted text-foreground"
+const LIKED = "border-transparent bg-positive/15 text-positive"
+const APPROVED = "border-transparent bg-positive text-positive-foreground"
+const REJECTED = "border-transparent bg-destructive/10 text-destructive"
+
 const statusConfig = {
-  submitted: { label: "Submitted", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300", icon: Music },
-  liked: { label: "Liked by Assistant", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300", icon: ThumbsUp }, // Legacy
-  assistant_liked: { label: "Liked by Assistant", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300", icon: ThumbsUp },
-  owner_liked: { label: "Approved by Owner", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300", icon: CheckCircle },
-  rejected_by_assistant: { label: "Rejected by Assistant", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", icon: ThumbsDown },
-  rejected: { label: "Rejected", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", icon: ThumbsDown },
-  approved: { label: "Approved by Admin", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300", icon: CheckCircle },
-  rejected_by_admin: { label: "Rejected by Admin", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", icon: XCircle },
+  submitted: { label: "Submitted", color: NEUTRAL, icon: Music },
+  liked: { label: "Liked by Assistant", color: LIKED, icon: ThumbsUp }, // Legacy
+  assistant_liked: { label: "Liked by Assistant", color: LIKED, icon: ThumbsUp },
+  owner_liked: { label: "Approved by Owner", color: APPROVED, icon: CheckCircle },
+  rejected_by_assistant: { label: "Rejected by Assistant", color: REJECTED, icon: ThumbsDown },
+  rejected: { label: "Rejected", color: REJECTED, icon: ThumbsDown },
+  approved: { label: "Approved by Admin", color: APPROVED, icon: CheckCircle },
+  rejected_by_admin: { label: "Rejected by Admin", color: REJECTED, icon: XCircle },
 }
 
 export default function DemoDashboard({ status }: DemoDashboardProps) {
@@ -509,11 +514,11 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
     const displayStatus = optimisticStatus || demo.status
     
     return (
-      <Card className={`mb-4 transition-all duration-300 ${isLoading ? 'opacity-60' : 'opacity-100'}`}>
-        <CardContent className="p-6 relative">
+      <Card className={`transition-opacity duration-300 ${isLoading ? 'opacity-60' : 'opacity-100'}`}>
+        <CardContent className="relative p-4 sm:p-6">
           {/* Loading overlay for better visual feedback */}
           {isLoading && (
-            <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+            <div className="absolute inset-0 z-10 flex rounded-2xl bg-card/60 backdrop-blur-sm items-center justify-center">
               <div className="bg-card rounded-lg shadow-lg p-4 flex items-center gap-3 border">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-sm font-medium text-foreground">Processing...</span>
@@ -521,64 +526,63 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
             </div>
           )}
 
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-foreground mb-1">{demo.track_title}</h3>
-              <p className="text-muted-foreground mb-2">{demo.artist_name}</p>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <CalendarDays className="w-4 h-4" />
-                  <span>Submitted: {demo.submitted_at}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <User className="w-4 h-4" />
-                  <span>{demo.email}</span>
-                </div>
-                <a
-                  href={demo.shared_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Listen on Dropbox
-                </a>
-              </div>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 flex-1 basis-56">
+              <h3 className="break-words text-lg font-semibold leading-snug text-foreground">{demo.track_title}</h3>
+              <p className="text-muted-foreground">{demo.artist_name}</p>
             </div>
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-start gap-1 sm:items-end">
               <div className="relative">
                 <StatusBadge status={displayStatus} />
                 {optimisticStatus && (
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <div className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-brand" />
                 )}
               </div>
               {displayStatus === "rejected" && (
-                <p className="text-xs text-red-600 dark:text-red-400 italic">Demo will be auto-deleted once a day</p>
+                <p className="text-xs text-destructive">Demo will be auto-deleted once a day</p>
               )}
             </div>
           </div>
 
-          <div className="flex gap-2 mb-4">
+          <div className="mb-4 flex flex-col gap-1.5 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5">
+            <div className="flex min-w-0 items-center gap-2">
+              <CalendarDays className="h-4 w-4 shrink-0" />
+              <span>Submitted: {demo.submitted_at}</span>
+            </div>
+            <div className="flex min-w-0 items-center gap-2">
+              <User className="h-4 w-4 shrink-0" />
+              <span className="truncate">{demo.email}</span>
+            </div>
+            <a
+              href={demo.shared_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              Listen on Dropbox
+            </a>
+          </div>
+
+          <div className="flex flex-wrap gap-2 empty:hidden [&>button]:flex-1 sm:[&>button]:flex-none">
             {currentUser === "assistant" && demo.status === "submitted" && (
               <>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="text-green-600 dark:text-green-400 border-green-600 dark:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 bg-transparent disabled:opacity-50"
+                  variant="positive"
                   onClick={(e) => handleActionClick(e, demo.demo_id, "like", "assistant_liked")}
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <ThumbsUp className="w-4 h-4 mr-1" />
+                    <ThumbsUp />
                   )}
                   Like
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent disabled:opacity-50"
+                  variant="negative"
                   onClick={async () => {
                     try {
                       await performDemoAction(demo.demo_id, "reject", "rejected")
@@ -590,9 +594,9 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <ThumbsDown className="w-4 h-4 mr-1" />
+                    <ThumbsDown />
                   )}
                   Reject
                 </Button>
@@ -604,8 +608,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
               <>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="text-green-600 dark:text-green-400 border-green-600 dark:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 bg-transparent disabled:opacity-50"
+                  variant="positive"
                   onClick={async () => {
                     try {
                       await performDemoAction(demo.demo_id, "like", "assistant_liked")
@@ -617,16 +620,15 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <ThumbsUp className="w-4 h-4 mr-1" />
+                    <ThumbsUp />
                   )}
                   Like
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent disabled:opacity-50"
+                  variant="negative"
                   onClick={async () => {
                     try {
                       await performDemoAction(demo.demo_id, "reject", "rejected")
@@ -638,9 +640,9 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <ThumbsDown className="w-4 h-4 mr-1" />
+                    <ThumbsDown />
                   )}
                   Reject
                 </Button>
@@ -651,7 +653,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
               <>
                 <Button
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                  variant="positive"
                   onClick={async () => {
                     try {
                       await performDemoAction(demo.demo_id, "approve", "approved")
@@ -663,16 +665,15 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <CheckCircle className="w-4 h-4 mr-1" />
+                    <CheckCircle />
                   )}
                   Approve
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent disabled:opacity-50"
+                  variant="negative"
                   onClick={async () => {
                     try {
                       await performDemoAction(demo.demo_id, "reject", "rejected")
@@ -684,9 +685,9 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <XCircle className="w-4 h-4 mr-1" />
+                    <XCircle />
                   )}
                   Reject
                 </Button>
@@ -698,7 +699,6 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
               <Button
                 size="sm"
                 variant="outline"
-                  className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-transparent disabled:opacity-50"
                 onClick={async () => {
                   try {
                     await performDemoAction(demo.demo_id, "undo_reject", "assistant_liked")
@@ -710,9 +710,9 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  <Loader2 className="animate-spin" />
                 ) : (
-                  <ThumbsUp className="w-4 h-4 mr-1" />
+                  <ThumbsUp />
                 )}
                 Undo Reject
               </Button>
@@ -723,7 +723,6 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
               <Button
                 size="sm"
                 variant="outline"
-                  className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-transparent disabled:opacity-50"
                 onClick={async () => {
                   try {
                     await performDemoAction(demo.demo_id, "undo_reject", "assistant_liked")
@@ -735,9 +734,9 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  <Loader2 className="animate-spin" />
                 ) : (
-                  <ThumbsUp className="w-4 h-4 mr-1" />
+                  <ThumbsUp />
                 )}
                 Undo Reject
               </Button>
@@ -764,7 +763,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
               />
               Your browser does not support the audio element.
             </audio>
-            <div className="text-xs text-muted-foreground mt-2 text-center">
+            <div className="mt-2 truncate text-center text-xs text-muted-foreground">
               {demo.track_title} by {demo.artist_name}
             </div>
           </div>
@@ -775,25 +774,23 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
 
   return (
     <div>
-      <div className="max-w-6xl mx-auto">
+      <div>
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-foreground">Demo Submission Dashboard</h1>
-          </div>
+        <div className="mb-6">
+          <h1 className="mb-5 font-display text-3xl text-foreground sm:text-4xl">Demo Submission Dashboard</h1>
 
           {/* Display API loading state */}
           {dashboardApi.loading && (
-            <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-blue-700 dark:text-blue-300">Loading demos from API...</span>
+            <div className="mb-4 flex items-center gap-2 rounded-xl bg-muted p-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading demos from API...</span>
             </div>
           )}
 
           {/* Display API errors */}
           {dashboardApi.error && (
-            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-              <p className="text-red-700 dark:text-red-300">Failed to load demos: {dashboardApi.error}</p>
+            <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+              <p className="text-sm text-destructive">Failed to load demos: {dashboardApi.error}</p>
               <Button 
                 size="sm" 
                 variant="outline" 
@@ -806,47 +803,35 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
             </div>
           )}
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Submitted</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{counts.submitted}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Liked</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{counts.liked}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Approved</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{counts.approved}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Rejected (Assistant & Admin)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{counts.rejected_by_assistant}</div>
-              </CardContent>
-            </Card>
+          {/* Summary Cards double as the quickest way to filter */}
+          <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              { label: "Submitted", count: counts.submitted, filter: "submitted", tone: "bg-muted-foreground" },
+              { label: "Liked", count: counts.liked, filter: "assistant_liked", tone: "bg-positive" },
+              { label: "Approved", count: counts.approved, filter: "owner_liked", tone: "bg-positive" },
+              { label: "Rejected (Assistant & Admin)", count: counts.rejected_by_assistant, filter: "rejected", tone: "bg-destructive" },
+            ].map(({ label, count, filter, tone }) => (
+              <button
+                key={filter}
+                type="button"
+                aria-pressed={statusFilter === filter}
+                onClick={() => setStatusFilter(statusFilter === filter ? "all" : filter)}
+                className={`rounded-2xl border bg-card p-4 text-left transition-colors hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusFilter === filter ? "border-foreground" : ""}`}
+              >
+                <span className="flex items-start gap-2 text-xs font-medium leading-snug text-muted-foreground">
+                  <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} aria-hidden="true" />
+                  {label}
+                </span>
+                <span className="mt-2 block font-display text-3xl text-foreground">{count}</span>
+              </button>
+            ))}
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <span className="text-sm font-medium text-foreground">Filter by status:</span>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-52">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -857,7 +842,6 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
-            {dashboardApi.loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
         </div>
 
@@ -867,7 +851,7 @@ export default function DemoDashboard({ status }: DemoDashboardProps) {
           {demos.length === 0 && !dashboardApi.loading ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <Music className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <Music className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
                 <h3 className="text-lg font-medium text-foreground mb-2">No demos found</h3>
                 <p className="text-muted-foreground">
                   {currentUser === "assistant"

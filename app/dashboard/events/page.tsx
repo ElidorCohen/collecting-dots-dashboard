@@ -17,7 +17,7 @@ import {
 import {
   ConfirmationDialog,
 } from '@/components/ui/confirmation-dialog'
-import { Calendar, Plus, Trash2, Edit2, MapPin, Users as UsersIcon, CalendarDays, Clock, Loader2, ExternalLink, Instagram } from 'lucide-react'
+import { Calendar, Plus, Trash2, Edit2, MapPin, Users as UsersIcon, Clock, Loader2, ExternalLink, Instagram } from 'lucide-react'
 
 interface Event {
   event_title: string
@@ -41,6 +41,14 @@ const toPickerDate = (date: string) => {
 const fromPickerDate = (date: string) => {
   const [year, month, day] = date.split('-')
   return `${day}/${month}/${year}`
+}
+
+// The stored date, split for the calendar block
+const dateParts = (date: string) => {
+  const match = date.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!match) return null
+  const month = new Date(2000, Number(match[2]) - 1).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()
+  return { day: match[1].padStart(2, '0'), month, year: match[3] }
 }
 
 // Links are often pasted without the scheme; the website only shows http(s) links
@@ -307,13 +315,13 @@ export default function EventsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header with Add Button */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Events</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl text-foreground sm:text-4xl">Events</h1>
             <p className="text-muted-foreground mt-1">Manage your events</p>
           </div>
           <Button onClick={openAddDialog}>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus />
             Add Event
           </Button>
         </div>
@@ -321,7 +329,7 @@ export default function EventsPage() {
         {/* Loading State */}
         {loading && (
           <Card>
-            <CardContent className="p-12 text-center">
+            <CardContent className="p-8 text-center sm:p-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">Loading events...</p>
             </CardContent>
@@ -331,9 +339,9 @@ export default function EventsPage() {
         {/* Error State */}
         {!loading && loadError && (
           <Card>
-            <CardContent className="p-12 text-center">
-              <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-foreground mb-2">Events could not be loaded</h2>
+            <CardContent className="p-8 text-center sm:p-12">
+              <Calendar className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+              <h2 className="mb-2 text-xl font-semibold text-foreground">Events could not be loaded</h2>
               <p className="text-muted-foreground mb-4">{loadError}</p>
               <Button onClick={fetchEvents}>Try again</Button>
             </CardContent>
@@ -343,14 +351,14 @@ export default function EventsPage() {
         {/* Empty State */}
         {!loading && !loadError && events.length === 0 && (
           <Card>
-            <CardContent className="p-12 text-center">
-              <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-foreground mb-2">No events yet</h2>
+            <CardContent className="p-8 text-center sm:p-12">
+              <Calendar className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+              <h2 className="mb-2 text-xl font-semibold text-foreground">No events yet</h2>
               <p className="text-muted-foreground mb-4">
                 Get started by adding your first event.
               </p>
               <Button onClick={openAddDialog}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus />
                 Add Event
               </Button>
             </CardContent>
@@ -358,83 +366,87 @@ export default function EventsPage() {
         )}
 
         {/* Events List */}
-        {!loading && events.length > 0 && (
-          <div className="grid gap-4">
-            {events.map((event, index) => (
-              <Card key={index}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-foreground mb-3">
+        {!loading && !loadError && events.length > 0 && (
+          <div className="grid gap-3">
+            {events.map((event, index) => {
+              const date = dateParts(event.date)
+              return (
+                <Card key={index} className="flex-row overflow-hidden">
+                  <div className="flex w-[4.5rem] shrink-0 flex-col items-center justify-center gap-0.5 border-r bg-muted/60 py-4 sm:w-24">
+                    {date ? (
+                      <>
+                        <span className="font-display text-2xl leading-none text-foreground sm:text-3xl">{date.day}</span>
+                        <span className="font-mono text-[11px] text-muted-foreground">{date.month}</span>
+                        <span className="font-mono text-[11px] text-muted-foreground">{date.year}</span>
+                      </>
+                    ) : (
+                      <span className="px-1 text-center text-xs text-muted-foreground">{event.date}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 p-4 sm:p-5">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="min-w-0 break-words pt-1 text-lg font-semibold leading-snug text-foreground">
                         {event.event_title}
                       </h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <CalendarDays className="w-4 h-4" />
-                          <span>{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Clock className="w-4 h-4" />
-                          <span>{event.times}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapPin className="w-4 h-4" />
-                          <span>{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <UsersIcon className="w-4 h-4" />
-                          <span>{event.artists}</span>
-                        </div>
-                        {event.event_external_url && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <ExternalLink className="w-4 h-4" />
-                            <a 
-                              href={event.event_external_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              External URL
-                            </a>
-                          </div>
-                        )}
-                        {event.event_instagram_post && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Instagram className="w-4 h-4" />
-                            <a 
-                              href={event.event_instagram_post} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              Instagram Post
-                            </a>
-                          </div>
-                        )}
+                      <div className="-mr-2 -mt-2 flex shrink-0 items-center">
+                        <Button variant="ghost" size="icon" aria-label={`Edit ${event.event_title}`} onClick={() => openEditDialog(index)}>
+                          <Edit2 />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Delete ${event.event_title}`}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => handleDeleteClick(index)}
+                        >
+                          <Trash2 />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(index)}
-                        className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteClick(index)}
-                        className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 shrink-0" />
+                        <span className="min-w-0">{event.times}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 shrink-0" />
+                        <span className="min-w-0">{event.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <UsersIcon className="h-4 w-4 shrink-0" />
+                        <span className="min-w-0">{event.artists}</span>
+                      </div>
                     </div>
+                    {(event.event_external_url || event.event_instagram_post) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {event.event_external_url && (
+                          <a
+                            href={event.event_external_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-input px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent sm:h-8"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            External URL
+                          </a>
+                        )}
+                        {event.event_instagram_post && (
+                          <a
+                            href={event.event_instagram_post}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-input px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent sm:h-8"
+                          >
+                            <Instagram className="h-3.5 w-3.5" />
+                            Instagram Post
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </Card>
+              )
+            })}
           </div>
         )}
 
@@ -456,10 +468,10 @@ export default function EventsPage() {
                     value={formData.event_title}
                     onChange={(e) => handleInputChange('event_title', e.target.value)}
                     placeholder="Collecting Dots Showcase"
-                    className={formErrors.event_title ? 'border-red-500' : ''}
+                    className={formErrors.event_title ? 'border-destructive' : ''}
                   />
                   {formErrors.event_title && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.event_title}</p>
+                    <p className="text-sm text-destructive">{formErrors.event_title}</p>
                   )}
                 </div>
 
@@ -470,10 +482,10 @@ export default function EventsPage() {
                     type="date"
                     value={formData.date}
                     onChange={(e) => handleInputChange('date', e.target.value)}
-                    className={formErrors.date ? 'border-red-500' : ''}
+                    className={formErrors.date ? 'border-destructive' : ''}
                   />
                   {formErrors.date && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.date}</p>
+                    <p className="text-sm text-destructive">{formErrors.date}</p>
                   )}
                 </div>
 
@@ -484,11 +496,11 @@ export default function EventsPage() {
                     value={formData.times}
                     onChange={(e) => handleInputChange('times', e.target.value)}
                     placeholder="12:00 - 22:00"
-                    className={formErrors.times ? 'border-red-500' : ''}
+                    className={formErrors.times ? 'border-destructive' : ''}
                   />
                   <p className="text-xs text-muted-foreground">Example: 12:00 - 22:00</p>
                   {formErrors.times && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.times}</p>
+                    <p className="text-sm text-destructive">{formErrors.times}</p>
                   )}
                 </div>
 
@@ -499,10 +511,10 @@ export default function EventsPage() {
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     placeholder="Warehouse 23, Berlin, Germany"
-                    className={formErrors.location ? 'border-red-500' : ''}
+                    className={formErrors.location ? 'border-destructive' : ''}
                   />
                   {formErrors.location && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.location}</p>
+                    <p className="text-sm text-destructive">{formErrors.location}</p>
                   )}
                 </div>
 
@@ -513,11 +525,11 @@ export default function EventsPage() {
                     value={formData.artists}
                     onChange={(e) => handleInputChange('artists', e.target.value)}
                     placeholder="OMRI., Dor Danino, Abel, Prlli, Lovers"
-                    className={formErrors.artists ? 'border-red-500' : ''}
+                    className={formErrors.artists ? 'border-destructive' : ''}
                   />
                   <p className="text-xs text-muted-foreground">Artist names separated by commas (OMRI., Dor Danino, Abel, Prlli, Lovers)</p>
                   {formErrors.artists && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artists}</p>
+                    <p className="text-sm text-destructive">{formErrors.artists}</p>
                   )}
                 </div>
 
@@ -530,13 +542,13 @@ export default function EventsPage() {
                     value={formData.event_external_url}
                     onChange={(e) => handleInputChange('event_external_url', e.target.value)}
                     placeholder="https://example.com/event"
-                    className={formErrors.event_external_url ? 'border-red-500' : ''}
+                    className={formErrors.event_external_url ? 'border-destructive' : ''}
                   />
                   {!formErrors.event_external_url && formData.event_external_url && (
                     <p className="text-xs text-muted-foreground">Must be a valid URL starting with http:// or https://</p>
                   )}
                   {formErrors.event_external_url && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.event_external_url}</p>
+                    <p className="text-sm text-destructive">{formErrors.event_external_url}</p>
                   )}
                 </div>
 
@@ -549,13 +561,13 @@ export default function EventsPage() {
                     value={formData.event_instagram_post}
                     onChange={(e) => handleInputChange('event_instagram_post', e.target.value)}
                     placeholder="https://www.instagram.com/p/..."
-                    className={formErrors.event_instagram_post ? 'border-red-500' : ''}
+                    className={formErrors.event_instagram_post ? 'border-destructive' : ''}
                   />
                   {!formErrors.event_instagram_post && formData.event_instagram_post && (
                     <p className="text-xs text-muted-foreground">Must be a valid URL starting with http:// or https://</p>
                   )}
                   {formErrors.event_instagram_post && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.event_instagram_post}</p>
+                    <p className="text-sm text-destructive">{formErrors.event_instagram_post}</p>
                   )}
                 </div>
               </div>
@@ -571,7 +583,7 @@ export default function EventsPage() {
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="animate-spin" />
                       {isEditing ? 'Updating...' : 'Adding...'}
                     </>
                   ) : (

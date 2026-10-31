@@ -2,13 +2,13 @@ import { SignUp } from "@clerk/nextjs";
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center font-display text-3xl text-foreground">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Demo Submission Dashboard
           </p>
         </div>
@@ -16,7 +16,7 @@ export default function SignUpPage() {
           appearance={{
             elements: {
               formButtonPrimary: 
-                "bg-blue-600 hover:bg-blue-700 text-sm normal-case",
+                "bg-primary text-primary-foreground hover:bg-primary/85 text-sm normal-case",
             },
           }}
           redirectUrl="/dashboard"

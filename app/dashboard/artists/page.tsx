@@ -17,7 +17,7 @@ import {
 import {
   ConfirmationDialog,
 } from '@/components/ui/confirmation-dialog'
-import { Users, Plus, Trash2, Edit2, Instagram, Music, ExternalLink, Loader2 } from 'lucide-react'
+import { Users, Plus, Trash2, Edit2, Instagram, Music, Loader2 } from 'lucide-react'
 import { normalizeArtist, validateArtist, type Artist } from '@/lib/artist-fields'
 
 interface ArtistsData {
@@ -226,13 +226,13 @@ export default function ArtistsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header with Add Button */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Artists</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl text-foreground sm:text-4xl">Artists</h1>
             <p className="text-muted-foreground mt-1">Manage your artists</p>
           </div>
           <Button onClick={openAddDialog}>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus />
             Add Artist
           </Button>
         </div>
@@ -240,7 +240,7 @@ export default function ArtistsPage() {
         {/* Loading State */}
         {loading && (
           <Card>
-            <CardContent className="p-12 text-center">
+            <CardContent className="p-8 text-center sm:p-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">Loading artists...</p>
             </CardContent>
@@ -250,9 +250,9 @@ export default function ArtistsPage() {
         {/* Error State */}
         {!loading && loadError && (
           <Card>
-            <CardContent className="p-12 text-center">
-              <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-foreground mb-2">Artists could not be loaded</h2>
+            <CardContent className="p-8 text-center sm:p-12">
+              <Users className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+              <h2 className="mb-2 text-xl font-semibold text-foreground">Artists could not be loaded</h2>
               <p className="text-muted-foreground mb-4">{loadError}</p>
               <Button onClick={fetchArtists}>Try again</Button>
             </CardContent>
@@ -262,14 +262,14 @@ export default function ArtistsPage() {
         {/* Empty State */}
         {!loading && !loadError && artists.length === 0 && (
           <Card>
-            <CardContent className="p-12 text-center">
-              <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-foreground mb-2">No artists yet</h2>
+            <CardContent className="p-8 text-center sm:p-12">
+              <Users className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+              <h2 className="mb-2 text-xl font-semibold text-foreground">No artists yet</h2>
               <p className="text-muted-foreground mb-4">
                 Get started by adding your first artist.
               </p>
               <Button onClick={openAddDialog}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus />
                 Add Artist
               </Button>
             </CardContent>
@@ -277,99 +277,53 @@ export default function ArtistsPage() {
         )}
 
         {/* Artists List */}
-        {!loading && artists.length > 0 && (
-          <div className="grid gap-4">
-            {artists.map((artist, index) => (
-              <Card key={index}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-foreground mb-4">
-                        {artist.artist_name}
-                      </h3>
-                      <div className="space-y-2">
-                        {artist.artist_instagram_username && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Instagram className="w-4 h-4" />
-                          <span className="font-medium">Instagram:</span>
-                          <a
-                            href={`https://instagram.com/${artist.artist_instagram_username.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-                          >
-                            @{artist.artist_instagram_username}
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                        )}
-                        {artist.artist_soundcloud && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Music className="w-4 h-4" />
-                          <span className="font-medium">SoundCloud:</span>
-                          <a
-                            href={artist.artist_soundcloud}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-                          >
-                            View Profile
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                        )}
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Music className="w-4 h-4" />
-                          <span className="font-medium">Spotify:</span>
-                          <a
-                            href={artist.artist_spotify}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-                          >
-                            View Profile
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                        {artist.artist_beatport && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Music className="w-4 h-4" />
-                          <span className="font-medium">Beatport:</span>
-                          <a
-                            href={artist.artist_beatport}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-                          >
-                            View Profile
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(index)}
-                        className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                      >
-                        <Edit2 className="w-4 h-4" />
+        {!loading && !loadError && artists.length > 0 && (
+          <div className="grid gap-3 md:grid-cols-2">
+            {artists.map((artist, index) => {
+              const links = [
+                { label: `@${artist.artist_instagram_username}`, href: `https://instagram.com/${artist.artist_instagram_username?.replace('@', '')}`, icon: Instagram, show: artist.artist_instagram_username },
+                { label: 'SoundCloud', href: artist.artist_soundcloud, icon: Music, show: artist.artist_soundcloud },
+                { label: 'Spotify', href: artist.artist_spotify, icon: Music, show: artist.artist_spotify },
+                { label: 'Beatport', href: artist.artist_beatport, icon: Music, show: artist.artist_beatport },
+              ].filter(link => link.show)
+              return (
+                <Card key={index} className="p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="min-w-0 break-words pt-1 text-lg font-semibold leading-snug text-foreground">
+                      {artist.artist_name}
+                    </h3>
+                    <div className="-mr-2 -mt-2 flex shrink-0 items-center">
+                      <Button variant="ghost" size="icon" aria-label={`Edit ${artist.artist_name}`} onClick={() => openEditDialog(index)}>
+                        <Edit2 />
                       </Button>
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete ${artist.artist_name}`}
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => handleDeleteClick(index)}
-                        className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 />
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {links.map(({ label, href, icon: Icon }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-9 max-w-full items-center gap-1.5 rounded-full border border-input px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent sm:h-8"
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{label}</span>
+                      </a>
+                    ))}
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         )}
 
@@ -391,10 +345,10 @@ export default function ArtistsPage() {
                     value={formData.artist_name}
                     onChange={(e) => handleInputChange('artist_name', e.target.value)}
                     placeholder="Omri."
-                    className={formErrors.artist_name ? 'border-red-500' : ''}
+                    className={formErrors.artist_name ? 'border-destructive' : ''}
                   />
                   {formErrors.artist_name && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_name}</p>
+                    <p className="text-sm text-destructive">{formErrors.artist_name}</p>
                   )}
                 </div>
 
@@ -405,10 +359,10 @@ export default function ArtistsPage() {
                     value={formData.artist_instagram_username}
                     onChange={(e) => handleInputChange('artist_instagram_username', e.target.value)}
                     placeholder="rafael__music"
-                    className={formErrors.artist_instagram_username ? 'border-red-500' : ''}
+                    className={formErrors.artist_instagram_username ? 'border-destructive' : ''}
                   />
                   {formErrors.artist_instagram_username && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_instagram_username}</p>
+                    <p className="text-sm text-destructive">{formErrors.artist_instagram_username}</p>
                   )}
                 </div>
 
@@ -421,13 +375,13 @@ export default function ArtistsPage() {
                     value={formData.artist_soundcloud}
                     onChange={(e) => handleInputChange('artist_soundcloud', e.target.value)}
                     placeholder="https://soundcloud.com/..."
-                    className={formErrors.artist_soundcloud ? 'border-red-500' : ''}
+                    className={formErrors.artist_soundcloud ? 'border-destructive' : ''}
                   />
                   {!formErrors.artist_soundcloud && formData.artist_soundcloud && (
                     <p className="text-xs text-muted-foreground">Must be a valid SoundCloud URL</p>
                   )}
                   {formErrors.artist_soundcloud && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_soundcloud}</p>
+                    <p className="text-sm text-destructive">{formErrors.artist_soundcloud}</p>
                   )}
                 </div>
 
@@ -440,13 +394,13 @@ export default function ArtistsPage() {
                     value={formData.artist_spotify}
                     onChange={(e) => handleInputChange('artist_spotify', e.target.value)}
                     placeholder="https://open.spotify.com/artist/..."
-                    className={formErrors.artist_spotify ? 'border-red-500' : ''}
+                    className={formErrors.artist_spotify ? 'border-destructive' : ''}
                   />
                   {!formErrors.artist_spotify && formData.artist_spotify && (
                     <p className="text-xs text-muted-foreground">The artist profile link; the website uses it for the photo</p>
                   )}
                   {formErrors.artist_spotify && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_spotify}</p>
+                    <p className="text-sm text-destructive">{formErrors.artist_spotify}</p>
                   )}
                 </div>
 
@@ -459,13 +413,13 @@ export default function ArtistsPage() {
                     value={formData.artist_beatport}
                     onChange={(e) => handleInputChange('artist_beatport', e.target.value)}
                     placeholder="https://www.beatport.com/artist/..."
-                    className={formErrors.artist_beatport ? 'border-red-500' : ''}
+                    className={formErrors.artist_beatport ? 'border-destructive' : ''}
                   />
                   {!formErrors.artist_beatport && formData.artist_beatport && (
                     <p className="text-xs text-muted-foreground">Must be a valid Beatport URL</p>
                   )}
                   {formErrors.artist_beatport && (
-                    <p className="text-sm text-red-600 dark:text-red-400">{formErrors.artist_beatport}</p>
+                    <p className="text-sm text-destructive">{formErrors.artist_beatport}</p>
                   )}
                 </div>
               </div>
@@ -481,7 +435,7 @@ export default function ArtistsPage() {
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="animate-spin" />
                       {isEditing ? 'Updating...' : 'Adding...'}
                     </>
                   ) : (

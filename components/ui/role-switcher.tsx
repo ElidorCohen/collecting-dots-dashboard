@@ -15,30 +15,9 @@ interface RoleSwitcherProps {
   className?: string
 }
 
-const roleConfig: Record<UserRole, { 
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  color: string
-  bgColor: string
-  borderColor: string
-  hoverBg: string
-}> = {
-  admin: {
-    label: "Label Owner",
-    icon: Crown,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-900/20",
-    borderColor: "border-amber-200 dark:border-amber-800",
-    hoverBg: "hover:bg-amber-100 dark:hover:bg-amber-900/30",
-  },
-  assistant: {
-    label: "Assistant",
-    icon: Users,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-900/20",
-    borderColor: "border-blue-200 dark:border-blue-800",
-    hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-900/30",
-  },
+const roleConfig: Record<UserRole, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  admin: { label: "Label Owner", icon: Crown },
+  assistant: { label: "Assistant", icon: Users },
 }
 
 export function RoleSwitcher({ className }: RoleSwitcherProps) {
@@ -59,19 +38,14 @@ export function RoleSwitcher({ className }: RoleSwitcherProps) {
       <DropdownMenuTrigger asChild>
         <button
           className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-200",
-            "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
-            config.bgColor,
-            config.borderColor,
-            config.hoverBg,
+            "flex h-10 items-center gap-2 rounded-lg border border-input px-3 text-sm font-medium transition-colors hover:bg-accent sm:h-9",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             className
           )}
         >
-          <Icon className={cn("w-4 h-4", config.color)} />
-          <span className={cn("text-sm font-medium", config.color)}>
-            {config.label}
-          </span>
-          <ChevronDown className={cn("w-3.5 h-3.5 ml-1", config.color)} />
+          <Icon className="h-4 w-4 text-brand" />
+          <span>{config.label}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
@@ -86,15 +60,15 @@ export function RoleSwitcher({ className }: RoleSwitcherProps) {
               onClick={() => handleRoleChange(role)}
               className={cn(
                 "flex items-center gap-2 cursor-pointer",
-                isSelected && roleItem.bgColor
+                isSelected && "bg-accent"
               )}
             >
-              <RoleIcon className={cn("w-4 h-4", roleItem.color)} />
+              <RoleIcon className="w-4 h-4" />
               <span className={cn("flex-1", isSelected && "font-medium")}>
                 {roleItem.label}
               </span>
               {isSelected && (
-                <Check className={cn("w-4 h-4", roleItem.color)} />
+                <Check className="w-4 h-4 text-brand" />
               )}
             </DropdownMenuItem>
           )
