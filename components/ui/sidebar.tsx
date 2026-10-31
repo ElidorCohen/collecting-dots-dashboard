@@ -28,6 +28,8 @@ interface SidebarProps {
   logo?: React.ReactNode
   appName?: string
   className?: string
+  /** Sits above the bottom items; receives whether the sidebar is collapsed. */
+  footer?: (collapsed: boolean) => React.ReactNode
 }
 
 export function Sidebar({ 
@@ -35,7 +37,8 @@ export function Sidebar({
   bottomItems = [],
   logo,
   appName = "Dashboard",
-  className 
+  className,
+  footer
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(() => {
     // Initialize from localStorage if available
@@ -165,6 +168,13 @@ export function Sidebar({
           )
         })}
       </nav>
+
+      {/* Footer */}
+      {footer && (
+        <div className={cn("px-4 py-3 border-t", isCollapsed && "px-3")}>
+          {footer(isCollapsed)}
+        </div>
+      )}
 
       {/* Bottom Items */}
       {bottomItems.length > 0 && (

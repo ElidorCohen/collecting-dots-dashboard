@@ -3,6 +3,7 @@
 import { Sidebar, type NavItem } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { RoleSwitcher } from "@/components/ui/role-switcher"
+import { StorageUsage } from "@/components/ui/storage-usage"
 import { useRole } from "@/lib/providers/role-provider"
 import { UserButton } from "@clerk/nextjs"
 import { LayoutDashboard, Settings, Calendar, Users } from "lucide-react"
@@ -50,6 +51,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         items={navItems}
         bottomItems={bottomItems}
         appName={appName}
+        footer={collapsed => <StorageUsage collapsed={collapsed} />}
       />
       
       {/* Main content area */}

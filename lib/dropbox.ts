@@ -119,6 +119,29 @@ export async function writeDropboxJson(accessToken: string, path: string, data: 
 }
 
 /**
+ * How much of the account's storage is used, in bytes.
+ * Needs the account_info.read permission on the Dropbox app.
+ */
+export async function getSpaceUsage(accessToken: string): Promise<{ used: number; allocated: number }> {
+  const response = await fetch('https://api.dropboxapi.com/2/users/get_space_usage', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw await dropboxError(response, 'storage check')
+  }
+
+  const { used, allocation } = await response.json()
+  // On a team plan the quota is shared, so the team's total is what can run out
+  return allocation['.tag'] === 'team'
+    ? { used: allocation.used, allocated: allocation.allocated }
+    : { used, allocated: allocation.allocated }
+}
+
+/**
  * Get a configured Dropbox client instance
  */
 export async function getDropboxClient(): Promise<Dropbox> {
