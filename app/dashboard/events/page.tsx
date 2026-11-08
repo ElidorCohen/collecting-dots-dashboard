@@ -18,6 +18,7 @@ import {
   ConfirmationDialog,
 } from '@/components/ui/confirmation-dialog'
 import { Calendar, Plus, Trash2, Edit2, MapPin, Users as UsersIcon, Clock, Loader2, ExternalLink, Instagram } from 'lucide-react'
+import { DEFAULT_RECENT_DAYS, eventStatuses, type EventStatus } from '@/lib/event-display'
 
 interface Event {
   event_title: string
@@ -31,6 +32,7 @@ interface Event {
 
 interface EventsData {
   events: Event[]
+  recentDays?: number
 }
 
 // The website reads DD/MM/YYYY; the date picker works in YYYY-MM-DD
@@ -65,6 +67,10 @@ const readError = async (response: Response, fallback: string) => {
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
+  // Days a past event stays in the website's main section; the draft is what the input shows
+  const [recentDays, setRecentDays] = useState(DEFAULT_RECENT_DAYS)
+  const [daysDraft, setDaysDraft] = useState(String(DEFAULT_RECENT_DAYS))
+  const [savingDays, setSavingDays] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -99,6 +105,9 @@ export default function EventsPage() {
       }
       const data: EventsData = await response.json()
       setEvents(data.events || [])
+      const days = Number.isInteger(data.recentDays) ? data.recentDays! : DEFAULT_RECENT_DAYS
+      setRecentDays(days)
+      setDaysDraft(String(days))
     } catch (error) {
       console.error('Error fetching events:', error)
       setLoadError(error instanceof Error ? error.message : 'Failed to fetch events')
@@ -311,6 +320,42 @@ export default function EventsPage() {
     setDeleteIndex(null)
   }
 
+  const saveDays = async () => {
+    const days = Number(daysDraft)
+    if (!Number.isInteger(days) || days < 0 || days > 365) {
+      alert('Days must be a whole number from 0 to 365')
+      return
+    }
+    try {
+      setSavingDays(true)
+      const response = await fetch('/api/events', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recentDays: days }),
+      })
+      if (!response.ok) {
+        throw new Error(await readError(response, 'Failed to save the days setting'))
+      }
+      setRecentDays(days)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to save the days setting')
+    } finally {
+      setSavingDays(false)
+    }
+  }
+
+  const statuses = eventStatuses(events, recentDays)
+  const shownCount = statuses.filter(status => status.kind === 'shown').length
+
+  const statusBadge = (status: EventStatus) => {
+    const [tone, label] =
+      status.kind === 'shown' ? ['bg-positive/15 text-positive', 'On the website'] :
+      status.kind === 'full' ? ['bg-caution/15 text-caution', 'Not shown · only 3 fit'] :
+      status.kind === 'archive' ? ['bg-muted text-muted-foreground', `Archive only · ${status.daysAgo} days ago`] :
+      ['bg-destructive/10 text-destructive', 'Not shown · date unreadable']
+    return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${tone}`}>{label}</span>
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -333,6 +378,34 @@ export default function EventsPage() {
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">Loading events...</p>
             </CardContent>
+          </Card>
+        )}
+
+        {/* What the website shows */}
+        {!loading && !loadError && (
+          <Card className="gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="min-w-0">
+              <p className="font-medium text-foreground">{shownCount} of {events.length} on the website&rsquo;s main events section</p>
+              <p className="text-sm text-muted-foreground">Older events stay in the Full Programme archive.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="recent-days" className="shrink-0 text-sm text-muted-foreground">Keep past events for</Label>
+              <Input
+                id="recent-days"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={365}
+                value={daysDraft}
+                onChange={(e) => setDaysDraft(e.target.value)}
+                className="w-20 text-center"
+              />
+              <span className="text-sm text-muted-foreground">days</span>
+              <Button size="sm" onClick={saveDays} disabled={savingDays || daysDraft === String(recentDays)}>
+                {savingDays ? <Loader2 className="animate-spin" /> : null}
+                Save
+              </Button>
+            </div>
           </Card>
         )}
 
@@ -403,6 +476,7 @@ export default function EventsPage() {
                         </Button>
                       </div>
                     </div>
+                    <div className="mt-2">{statusBadge(statuses[index])}</div>
                     <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 shrink-0" />

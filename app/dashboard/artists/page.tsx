@@ -230,6 +230,7 @@ export default function ArtistsPage() {
           <div className="min-w-0">
             <h1 className="font-display text-3xl text-foreground sm:text-4xl">Artists</h1>
             <p className="text-muted-foreground mt-1">Manage your artists</p>
+            <p className="mt-1 text-xs text-muted-foreground">Artists order decided by popularity</p>
           </div>
           <Button onClick={openAddDialog}>
             <Plus />

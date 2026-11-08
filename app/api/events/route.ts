@@ -15,6 +15,8 @@ interface Event {
 
 interface EventsData {
   events: Event[]
+  /** Days a past event stays in the website's main events section */
+  recentDays?: number
 }
 
 /**
@@ -161,10 +163,10 @@ export async function POST(request: NextRequest) {
     const accessToken = await getValidAccessToken()
 
     // A failed read must stop here: writing anyway would replace every event with this one
-    const existingEvents = (await readEvents(accessToken))?.events ?? []
+    const eventsData = await readEvents(accessToken)
     const newEvent = toEvent(body)
 
-    await writeEvents(accessToken, { events: [...existingEvents, newEvent] })
+    await writeEvents(accessToken, { ...eventsData, events: [...(eventsData?.events ?? []), newEvent] })
 
     return NextResponse.json({ success: true, event: newEvent })
   } catch (error) {
@@ -228,6 +230,7 @@ export async function PUT(request: NextRequest) {
     const updatedEvent = toEvent(body)
 
     await writeEvents(accessToken, {
+      ...eventsData,
       events: eventsData.events.map((event, i) =>
         i === eventIndex ? updatedEvent : event
       ),
@@ -285,6 +288,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await writeEvents(accessToken, {
+      ...eventsData,
       events: eventsData.events.filter((_, i) => i !== eventIndex),
     })
 
@@ -293,6 +297,34 @@ export async function DELETE(request: NextRequest) {
     console.error('Error deleting event:', error)
     return NextResponse.json(
       { error: `Failed to delete event: ${reason(error)}` },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PATCH /api/events - Set how many days past events stay in the website's main section: { recentDays }
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const { recentDays } = await request.json()
+    if (!Number.isInteger(recentDays) || recentDays < 0 || recentDays > 365) {
+      return NextResponse.json(
+        { error: 'Days must be a whole number from 0 to 365' },
+        { status: 400 }
+      )
+    }
+
+    const accessToken = await getValidAccessToken()
+    const eventsData = await readEvents(accessToken)
+
+    await writeEvents(accessToken, { ...eventsData, events: eventsData?.events ?? [], recentDays })
+
+    return NextResponse.json({ success: true, recentDays })
+  } catch (error) {
+    console.error('Error updating event display days:', error)
+    return NextResponse.json(
+      { error: `Failed to save the days setting: ${reason(error)}` },
       { status: 500 }
     )
   }
