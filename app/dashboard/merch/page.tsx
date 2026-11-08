@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { ShoppingBag, Plus, Trash2, Edit2, Loader2, ChevronUp, ChevronDown, ExternalLink, Wand2, X } from 'lucide-react'
+import { ShoppingBag, Plus, Trash2, Edit2, Loader2, ChevronUp, ChevronDown, ExternalLink, Wand2, X, GripVertical } from 'lucide-react'
 import { normalizeProduct, validateProduct, type MerchImage, type MerchProduct } from '@/lib/merch'
 
 const EMPTY = { id: '', name: '', shortName: '', category: '', brand: '', brandName: '', url: '', images: [] as MerchImage[] }
@@ -40,6 +40,9 @@ export default function MerchPage() {
   const [lookupState, setLookupState] = useState<{ busy: boolean; error?: string }>({ busy: false })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [reordering, setReordering] = useState(false)
+  // Mouse users drag; touch screens use the arrows
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dropAt, setDropAt] = useState<number | null>(null)
 
   useEffect(() => {
     fetchProducts()
@@ -166,10 +169,11 @@ export default function MerchPage() {
   }
 
   // The list order is the website order; it saves as soon as a product moves
-  const move = async (index: number, by: number) => {
+  const moveTo = async (from: number, to: number) => {
+    if (from === to) return
     const next = [...products]
-    const [product] = next.splice(index, 1)
-    next.splice(index + by, 0, product)
+    const [product] = next.splice(from, 1)
+    next.splice(to, 0, product)
     setProducts(next)
     try {
       setReordering(true)
@@ -187,6 +191,26 @@ export default function MerchPage() {
     } finally {
       setReordering(false)
     }
+  }
+
+  const move = (index: number, by: number) => moveTo(index, index + by)
+
+  // dropAt is the gap the product would land in: 0 is above the first, products.length below the last
+  const dragOver = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+    if (dragIndex === null) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    const box = e.currentTarget.getBoundingClientRect()
+    setDropAt(e.clientY < box.top + box.height / 2 ? index : index + 1)
+  }
+
+  const drop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (dragIndex !== null && dropAt !== null) {
+      moveTo(dragIndex, dropAt > dragIndex ? dropAt - 1 : dropAt)
+    }
+    setDragIndex(null)
+    setDropAt(null)
   }
 
   const handleDeleteConfirm = async () => {
@@ -214,7 +238,7 @@ export default function MerchPage() {
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="font-display text-3xl text-foreground sm:text-4xl">Merch</h1>
-            <p className="text-muted-foreground mt-1">The order here is the order on the website</p>
+            <p className="text-muted-foreground mt-1">The order here is the order on the website.<span className="hidden [@media(pointer:fine)]:inline"> Drag to reorder.</span></p>
           </div>
           <Button onClick={() => openDialog(null)}>
             <Plus />
@@ -257,12 +281,23 @@ export default function MerchPage() {
         )}
 
         {!loading && !loadError && products.length > 0 && (
-          <ol className="grid gap-3">
+          <ol className="grid gap-3" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropAt(null) }}>
             {products.map((product, index) => (
-              <li key={product.id}>
-                <Card className="flex-row items-center gap-3 overflow-hidden p-2 pr-1 sm:gap-4 sm:p-3">
+              <li
+                key={product.id}
+                draggable={!reordering}
+                onDragStart={(e) => { setDragIndex(index); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', product.id) }}
+                onDragOver={(e) => dragOver(e, index)}
+                onDrop={drop}
+                onDragEnd={() => { setDragIndex(null); setDropAt(null) }}
+                className={`relative min-w-0 ${dragIndex === index ? 'opacity-40' : ''}`}
+              >
+                {dropAt === index && dragIndex !== null && <span className="absolute -top-2 left-0 right-0 h-0.5 rounded-full bg-brand" aria-hidden="true" />}
+                {dropAt === index + 1 && index === products.length - 1 && dragIndex !== null && <span className="absolute -bottom-2 left-0 right-0 h-0.5 rounded-full bg-brand" aria-hidden="true" />}
+                <Card className="flex-row items-center gap-3 overflow-hidden p-2 pr-1 sm:gap-4 sm:p-3 [@media(pointer:fine)]:cursor-grab [@media(pointer:fine)]:active:cursor-grabbing">
+                  <GripVertical className="hidden h-4 w-4 shrink-0 text-muted-foreground [@media(pointer:fine)]:block" aria-hidden="true" />
                   <span className="w-5 shrink-0 text-center font-mono text-xs text-muted-foreground">{String(index + 1).padStart(2, '0')}</span>
-                  <img src={product.images[0]?.src} alt="" className="h-20 w-[60px] shrink-0 rounded-lg bg-muted object-cover" />
+                  <img src={product.images[0]?.src} alt="" draggable={false} className="h-20 w-[60px] shrink-0 rounded-lg bg-muted object-cover" />
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate font-semibold text-foreground">{product.shortName}</h3>
                     <p className="truncate text-sm text-muted-foreground">{product.brand} · {product.category}</p>
@@ -276,7 +311,7 @@ export default function MerchPage() {
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
-                  <div className="flex shrink-0 flex-col sm:flex-row">
+                  <div className="flex shrink-0 flex-col sm:flex-row [@media(pointer:fine)]:hidden">
                     <Button variant="ghost" size="icon" aria-label={`Move ${product.shortName} up`} disabled={index === 0 || reordering} onClick={() => move(index, -1)}>
                       <ChevronUp />
                     </Button>
