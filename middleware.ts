@@ -7,6 +7,7 @@ const isProtectedRoute = createRouteMatcher([
   '/api/artists(.*)',
   '/api/events(.*)',
   '/api/dropbox-usage(.*)',
+  '/api/merch(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {

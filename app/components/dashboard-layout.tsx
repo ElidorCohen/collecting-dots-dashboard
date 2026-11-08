@@ -6,7 +6,7 @@ import { RoleSwitcher } from "@/components/ui/role-switcher"
 import { StorageUsage } from "@/components/ui/storage-usage"
 import { useRole } from "@/lib/providers/role-provider"
 import { UserButton } from "@clerk/nextjs"
-import { LayoutDashboard, Settings, Calendar, Users } from "lucide-react"
+import { LayoutDashboard, Settings, Calendar, Users, ShoppingBag } from "lucide-react"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -31,6 +31,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Artists",
       href: `/dashboard/artists`,
       icon: Users,
+    },
+    {
+      title: "Merch",
+      href: `/dashboard/merch`,
+      icon: ShoppingBag,
     },
   ]
 

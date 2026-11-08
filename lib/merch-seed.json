@@ -1,0 +1,142 @@
+{
+  "products": [
+    {
+      "id": "collecting-dots-x-float-waveform-tee",
+      "name": "Collecting Dots x Float Waveform Tee",
+      "shortName": "Waveform Tee",
+      "category": "T-shirt",
+      "images": [
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-83.jpg?v=1765872895",
+          "width": 1440,
+          "height": 1920,
+          "label": "Back print"
+        },
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-88.jpg?v=1765538915",
+          "width": 1440,
+          "height": 1920,
+          "label": "Front"
+        }
+      ],
+      "brand": "Float",
+      "brandName": "Float Apparel",
+      "url": "https://www.floatapparel.co.za/collections/collecting-dots-x-float"
+    },
+    {
+      "id": "collecting-dots-float-logo-cap",
+      "name": "Collecting Dots Float Logo Cap",
+      "shortName": "Logo Cap",
+      "category": "Headwear",
+      "images": [
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-11.jpg?v=1765539824",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 01"
+        },
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-10.jpg?v=1765539825",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 02"
+        }
+      ],
+      "brand": "Float",
+      "brandName": "Float Apparel",
+      "url": "https://www.floatapparel.co.za/collections/collecting-dots-x-float"
+    },
+    {
+      "id": "collecting-dots-x-float-mechanic-bowler",
+      "name": "Collecting Dots x Float Mechanic Bowler",
+      "shortName": "Mechanic Bowler",
+      "category": "Shirt",
+      "images": [
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-69.jpg?v=1765539570",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 01"
+        },
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-74.jpg?v=1765539570",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 02"
+        }
+      ],
+      "brand": "Float",
+      "brandName": "Float Apparel",
+      "url": "https://www.floatapparel.co.za/collections/collecting-dots-x-float"
+    },
+    {
+      "id": "collecting-dots-x-float-quilted-tote",
+      "name": "Collecting Dots x Float Quilted Tote",
+      "shortName": "Quilted Tote",
+      "category": "Bag",
+      "images": [
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-51.jpg?v=1765788189",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 01"
+        },
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-48.jpg?v=1765788189",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 02"
+        }
+      ],
+      "brand": "Float",
+      "brandName": "Float Apparel",
+      "url": "https://www.floatapparel.co.za/collections/collecting-dots-x-float"
+    },
+    {
+      "id": "summer-essentials-tee-black-copy",
+      "name": "Collecting Dots x Float Protea Tee",
+      "shortName": "Protea Tee",
+      "category": "T-shirt",
+      "images": [
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-62.jpg?v=1765538074",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 01"
+        },
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-55.jpg?v=1765538119",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 02"
+        }
+      ],
+      "brand": "Float",
+      "brandName": "Float Apparel",
+      "url": "https://www.floatapparel.co.za/collections/collecting-dots-x-float"
+    },
+    {
+      "id": "collecting-dots-float-oval-dot-cap",
+      "name": "Collecting Dots Float Oval Dot Cap",
+      "shortName": "Oval Dot Cap",
+      "category": "Headwear",
+      "images": [
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-03.jpg?v=1765541687",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 01"
+        },
+        {
+          "src": "https://www.floatapparel.co.za/cdn/shop/files/FloatSS2526-06.jpg?v=1765541687",
+          "width": 1440,
+          "height": 1920,
+          "label": "Look 02"
+        }
+      ],
+      "brand": "Float",
+      "brandName": "Float Apparel",
+      "url": "https://www.floatapparel.co.za/collections/collecting-dots-x-float"
+    }
+  ]
+}
